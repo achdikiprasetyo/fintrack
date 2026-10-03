@@ -290,20 +290,82 @@ function transferWalletKeyboard(step: "from" | "to", wallets: any[], excludeId?:
   return { inline_keyboard: buttons };
 }
 
-function parseAmountAndNote(rawText: string) {
+let cachedUsdRate: { rate: number; timestamp: number } | null = null;
+async function getLiveUsdRate(): Promise<number> {
+  const now = Date.now();
+  if (cachedUsdRate && (now - cachedUsdRate.timestamp < 60000)) {
+    return cachedUsdRate.rate;
+  }
+  // 1. Primary: Realtime Interbank Forex (matches Google Finance)
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/USD", {
+      signal: AbortSignal.timeout(4000)
+    });
+    const json = await res.json();
+    const rate = json?.rates?.IDR;
+    if (rate && rate > 5000) {
+      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
+      return cachedUsdRate.rate;
+    }
+  } catch (e) {
+    console.warn("Failed fetching Open ER USD:", e);
+  }
+
+  // 2. Secondary fallback: ExchangeRate-API
+  try {
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD", {
+      signal: AbortSignal.timeout(4000)
+    });
+    const json = await res.json();
+    const rate = json?.rates?.IDR;
+    if (rate && rate > 5000) {
+      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
+      return cachedUsdRate.rate;
+    }
+  } catch (e) {}
+
+  // 3. Fallback: Yahoo Finance USDIDR=X
+  try {
+    const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/USDIDR=X", {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+      signal: AbortSignal.timeout(4000)
+    });
+    const json = await res.json();
+    const rate = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
+    if (rate && rate > 5000) {
+      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
+      return cachedUsdRate.rate;
+    }
+  } catch (e) {
+    console.warn("Failed fetching live Yahoo USD:", e);
+  }
+  return cachedUsdRate ? cachedUsdRate.rate : 17887.64;
+}
+
+function parseAmountAndNote(rawText: string, usdRate = 17887) {
   const text = rawText.trim();
+  const usdRegex = /(?:\$|usd\s*|\bdollar\s*)([0-9]+(?:[.,][0-9]+)?)|([0-9]+(?:[.,][0-9]+)?)\s*(?:\$|usd\b|\bdollar\b)/i;
   const jtRegex = /(?:rp\.?\s*)?([0-9]+(?:[.,][0-9]+)?)\s*(?:jt|juta)\b/i;
   const rbRegex = /(?:rp\.?\s*)?([0-9]+(?:[.,][0-9]+)?)\s*(?:k|rb|ribu)\b/i;
   const plainRegex = /(?:rp\.?\s*)?([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]+)/i;
 
   let amount = 0;
   let matchStr = "";
+  let isDollar = false;
+  let dollarVal = 0;
 
+  const usdMatch = text.match(usdRegex);
   const jtMatch = text.match(jtRegex);
   const rbMatch = text.match(rbRegex);
   const plainMatch = text.match(plainRegex);
 
-  if (jtMatch) {
+  if (usdMatch) {
+    const rawVal = (usdMatch[1] || usdMatch[2] || "").replace(",", ".");
+    dollarVal = parseFloat(rawVal) || 0;
+    amount = Math.round(dollarVal * usdRate);
+    matchStr = usdMatch[0];
+    isDollar = true;
+  } else if (jtMatch) {
     amount = parseFloat(jtMatch[1].replace(",", ".")) * 1000000;
     matchStr = jtMatch[0];
   } else if (rbMatch) {
@@ -319,6 +381,10 @@ function parseAmountAndNote(rawText: string) {
   note = note.replace(/(?:di\s+)?(?:dana|seabank|bca|sea)/gi, "").trim();
   note = note.replace(/^(?:untuk|buat|beli|bayar)\s+/i, "").trim();
   note = note.replace(/\s+/g, " ").trim();
+
+  if (isDollar && dollarVal > 0) {
+    note = `${note ? note + " " : ""}($${dollarVal} @ Rp ${Math.round(usdRate).toLocaleString("id-ID")})`.trim();
+  }
 
   return { amount, note };
 }
@@ -859,11 +925,16 @@ async function parseWithHermesOrFallback(text: string, wallets: any[]) {
     throw new Error("GOOGLE_API_KEY wajib diset di file .env!");
   }
 
-  // 1. Multi-Model Fallback Chain (Gemini 3.5 Flash Lite -> Gemini 3.1 Flash Lite -> Gemini 3.8 Flash)
+  // Live Realtime Forex USD to IDR rate
+  const liveUsdRate = await getLiveUsdRate();
+  const rateRounded = Math.round(liveUsdRate);
+  const rateFormatted = rateRounded.toLocaleString("id-ID");
+
+  // 1. Multi-Model Fallback Chain (Gemini Flash Lite Latest -> Gemini 3.1 Flash Lite -> Gemini 2.5 Flash)
   const candidateModels = [
-    { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite" },
+    { id: "gemini-flash-lite-latest", label: "Gemini Flash Lite" },
     { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
-    { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash" }
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" }
   ];
 
   for (const model of candidateModels) {
@@ -874,17 +945,22 @@ async function parseWithHermesOrFallback(text: string, wallets: any[]) {
       const promptSystem = `You are an expert financial transaction extractor for Indonesian users.
 User wallets: ${walletListStr}.
 Today's local date is ${new Date().toISOString().slice(0, 10)}.
+Current Live USD Exchange Rate: 1 USD = Rp ${rateFormatted} (IDR ${rateRounded}).
 
 Rules:
 1. Parse single or multiple transactions from user's text into a JSON array of objects.
 2. For each transaction, extract:
    - "type": "expense" | "income" | "transfer"
-   - "amount": integer in Rupiah (e.g. 25k -> 25000, 50rb -> 50000, 1.5jt -> 1500000, 100000 -> 100000)
+   - "amount": integer in Rupiah (IDR).
+     * Standard Indonesian expressions: e.g. 25k -> 25000, 50rb -> 50000, 1.5jt -> 1500000, 100000 -> 100000.
+     * Foreign Currencies (USD / Dollar / $): If user inputs amounts in USD, Dollar, or $ (e.g. "$10", "15 dollar", "5 usd", "domain $12.50", "beli vps 7.5 dollar"):
+       AUTOMATICALLY CONVERT TO RUPIAH by multiplying the dollar value by the live rate (1 USD = ${rateRounded} IDR), rounded to nearest integer (e.g. "$10" -> ${10 * rateRounded}).
+       In the "note" field, include the original dollar amount in parentheses, e.g. "Beli Domain ($12 @ Rp ${rateFormatted})".
    - "wallet": matched wallet name from user wallets (or most appropriate default)
    - "fromWallet": for transfers, the source wallet name
    - "toWallet": for transfers, the destination wallet name
-   - "category": appropriate category (e.g. "Makanan & Minuman", "Transportasi", "Belanja & Hiburan", "Tagihan & Utilitas", "Kesehatan", "Gaji & Pendapatan", "Investasi", "Transfer Antar Rekening")
-   - "note": clean, concise description (e.g. "Makan siang bakso", "Beli bensin pertalite", "Transfer ke DANA")
+   - "category": appropriate category (e.g. "Makanan & Minuman", "Transportasi", "Belanja & Hiburan", "Tagihan & Utilitas", "Kesehatan", "Gaji & Pendapatan", "Investasi", "Transfer Antar Rekening", "Teknologi & Langganan")
+   - "note": clean, concise description
 3. Return ONLY a valid JSON array of objects: [{"type":..., "amount":..., "wallet":..., "fromWallet":..., "toWallet":..., "category":..., "note":...}]. No markdown wrapping or explanations.`;
 
       const payload = {
@@ -939,7 +1015,7 @@ Rules:
   }
 
   // 2. Fallback Heuristik Lokal
-  const { amount, note: rawNote } = parseAmountAndNote(text);
+  const { amount, note: rawNote } = parseAmountAndNote(text, rateRounded);
   const lower = text.toLowerCase();
   let targetWallet = wallets[0];
   if (lower.includes("dana")) targetWallet = wallets.find((w: any) => (w.name || "").toLowerCase().includes("dana")) || targetWallet;
@@ -1197,7 +1273,8 @@ async function handleUpdate(update: any): Promise<Response> {
 
     // Handle Wizard Step 3 (Transfer Amount + Note)
     if (session && session.step === "awaiting_transfer_amount") {
-      const { amount, note: rawNote } = parseAmountAndNote(text);
+      const liveRate = await getLiveUsdRate();
+      const { amount, note: rawNote } = parseAmountAndNote(text, liveRate);
       if (amount <= 0) {
         const errorMsg = "⚠️ <b>Nominal belum terbaca atau tidak valid!</b>\n\nMohon ketik nominal transfer dengan jelas.\nContoh:\n• <code>100000</code>\n• <code>50rb</code>\n• <code>1.5jt Bayar kos</code>\n\n<i>(Atau ketik <code>/batal</code> untuk membatalkan)</i>";
         await sendOrEdit(chatId, errorMsg);
@@ -1224,7 +1301,8 @@ async function handleUpdate(update: any): Promise<Response> {
 
     // Handle Wizard Step 2 (Amount + Note input for income/expense)
     if (session && session.step === "awaiting_amount_note") {
-      const { amount, note: rawNote } = parseAmountAndNote(text);
+      const liveRate = await getLiveUsdRate();
+      const { amount, note: rawNote } = parseAmountAndNote(text, liveRate);
       if (amount <= 0) {
         const errorMsg = "⚠️ <b>Nominal belum terbaca atau tidak valid!</b>\n\nMohon ketik nominal dan catatan dengan jelas.\nContoh:\n• <code>50000 Nasi Padang</code>\n• <code>35rb Kopi</code>\n• <code>100k</code>\n\n<i>(Atau ketik <code>/batal</code> untuk membatalkan)</i>";
         await sendOrEdit(chatId, errorMsg);
@@ -1311,58 +1389,6 @@ async function handleUpdate(update: any): Promise<Response> {
   }
 }
 
-let cachedUsdRate: { rate: number; timestamp: number } | null = null;
-async function getLiveUsdRate(): Promise<number> {
-  const now = Date.now();
-  if (cachedUsdRate && (now - cachedUsdRate.timestamp < 60000)) {
-    return cachedUsdRate.rate;
-  }
-  // 1. Primary: Realtime Interbank Forex (matches Google Finance)
-  try {
-    const res = await fetch("https://open.er-api.com/v6/latest/USD", {
-      signal: AbortSignal.timeout(4000)
-    });
-    const json = await res.json();
-    const rate = json?.rates?.IDR;
-    if (rate && rate > 5000) {
-      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
-      return cachedUsdRate.rate;
-    }
-  } catch (e) {
-    console.warn("Failed fetching Open ER USD:", e);
-  }
-
-  // 2. Secondary fallback: ExchangeRate-API
-  try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD", {
-      signal: AbortSignal.timeout(4000)
-    });
-    const json = await res.json();
-    const rate = json?.rates?.IDR;
-    if (rate && rate > 5000) {
-      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
-      return cachedUsdRate.rate;
-    }
-  } catch (e) {}
-
-  // 3. Fallback: Yahoo Finance USDIDR=X
-  try {
-    const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/USDIDR=X", {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      signal: AbortSignal.timeout(4000)
-    });
-    const json = await res.json();
-    const rate = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if (rate && rate > 5000) {
-      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
-      return cachedUsdRate.rate;
-    }
-  } catch (e) {
-    console.warn("Failed fetching live Yahoo USD:", e);
-  }
-  return cachedUsdRate ? cachedUsdRate.rate : 17887.64;
-}
-
 // ==========================================
 // RECEIPT SCANNER & OCR WITH GEMINI VISION
 // ==========================================
@@ -1378,9 +1404,9 @@ async function scanReceiptWithGemini(params: { imageBase64?: string; mimeType?: 
   const walletListStr = wallets.map((w: any) => `${w.name} (id: "${w.id}")`).join(", ");
 
   const candidateModels = [
-    "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
-    "gemini-3.6-flash"
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash"
   ];
 
   const systemPrompt = `You are an expert Indonesian financial transaction and receipt extractor.
