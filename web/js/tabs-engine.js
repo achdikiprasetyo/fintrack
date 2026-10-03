@@ -95,17 +95,6 @@
   }
   window.animateTransactionCascade = animateTransactionCascade;
 
-  // Auto trigger cascade when switching filter tabs inside Mutasi
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('.tx-filter-btn, .tx-rows-select-wrap select')) {
-      setTimeout(() => {
-        if (typeof window.animateTransactionCascade === 'function') {
-          window.animateTransactionCascade();
-        }
-      }, 70);
-    }
-  });
-
   // 6. Confetti Celebration Engine (Quiet - No vibration or sound)
   function triggerDopamineConfetti(originX, originY) {
     try {
@@ -145,20 +134,8 @@
   }
   window.triggerDopamineConfetti = triggerDopamineConfetti;
 
-  // 7. Event Listeners for Modal Tabs and Submits
+  // 7. Event Listeners for Confetti on Submits
   document.addEventListener('click', (e) => {
-    const formTab = e.target.closest('.form-tab-btn');
-    if (formTab) {
-      setTimeout(() => {
-        const form = document.querySelector('.modal-card form');
-        if (form) {
-          form.style.animation = 'none';
-          void form.offsetWidth;
-          form.style.animation = 'ftFormCrossFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) both';
-        }
-      }, 20);
-    }
-
     const submitBtn = e.target.closest('#btn-receipt-submit, .btn-success-finish, #btn-modal-export-submit');
     if (submitBtn) {
       setTimeout(() => {

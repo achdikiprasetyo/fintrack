@@ -38,11 +38,6 @@
 
         const startTime = performance.now();
 
-        // Trigger neon glow pulse
-        element.classList.remove('nominal-glow-active');
-        void element.offsetWidth; // reflow
-        element.classList.add('nominal-glow-active');
-
         function step(now) {
           const progress = Math.min((now - startTime) / duration, 1);
           // Ease out cubic: 1 - (1 - progress)^3
@@ -392,9 +387,8 @@
           const tx = json.data;
           const wallets = json.wallets || getFinTrackData().wallets || [];
 
-          // Stop HUD ticker & Play crystal detection bell + haptic!
+          // Stop HUD ticker
           stopHudScanningSteps();
-          playDetectionChime();
 
           // Populate wallets dropdown
           receiptSelectWallet.innerHTML = '';

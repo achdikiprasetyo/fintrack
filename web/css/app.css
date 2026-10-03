@@ -5437,107 +5437,53 @@ button:active, .btn:active, .btn-icon:active, .form-tab-btn:active, .q-chip:acti
    Physics-Based Spring Curves, Velvet Sheen & Dopamine Tactile Feedback
    ======================================================== */
 
-/* Tab-Level Smooth Micro-Fade with Apple Spring Curve (2-3px Micro-Bounce) */
+/* Tab-Level Smooth Micro-Fade (Solid, Calm, No Jarring Blinking) */
 @keyframes ftTabFadeIn {
   0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.995);
-  }
-  75% {
-    transform: translateY(-2px) scale(1.002);
+    opacity: 0.94;
+    transform: translateY(3px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .ft-tab-enter {
-  animation: ftTabFadeIn 0.32s cubic-bezier(0.34, 1.25, 0.64, 1) both !important;
-  will-change: transform, opacity;
+  animation: ftTabFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both !important;
 }
 
-/* Mutasi Unified Card Cascade with Apple Spring Physics */
+/* Mutasi Unified Card Cascade (Smooth & Non-flickering) */
 @keyframes ftCascadeCardUp {
   0% {
-    opacity: 0;
-    transform: translateY(22px) scale(0.985);
-  }
-  75% {
-    transform: translateY(-2.5px) scale(1.003);
+    opacity: 0.94;
+    transform: translateY(3px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-/* Velvet Light Sheen (Specular Gloss Sweep on Card Entrances) */
+/* Velvet Light Sheen disabled to prevent visual flash/strobe */
 .net-worth-hero,
 .analytics-header-card,
 .analytics-chart-card,
 .analytics-kpi-card,
 .tx-group-card {
   position: relative !important;
-  overflow: hidden !important;
 }
 
 .net-worth-hero.ft-tab-enter::after,
 #section-analytics-overview.ft-tab-enter .analytics-header-card::after,
 #section-analytics-overview.ft-tab-enter .analytics-chart-card::after,
 .ft-mutasi-animating .tx-group-card::after {
-  content: '' !important;
-  display: block !important;
-  position: absolute !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  left: -100% !important;
-  width: 100% !important;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.035) 45%,
-    rgba(56, 189, 248, 0.09) 50%,
-    rgba(255, 255, 255, 0.035) 55%,
-    transparent 70%
-  ) !important;
-  pointer-events: none !important;
-  z-index: 10 !important;
-  animation: ftVelvetSheenSweep 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both !important;
+  display: none !important;
 }
 
-@keyframes ftVelvetSheenSweep {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(250%);
-    opacity: 0;
-  }
-}
-
-/* Tactile Micro-Pop for Mutasi Category Icons */
+/* Mutasi Category Icons: Keep completely stable, no jumping scale */
 .ft-mutasi-animating .tx-timeline-icon {
-  animation: ftIconBadgePop 0.35s cubic-bezier(0.34, 1.45, 0.64, 1) both !important;
-}
-
-@keyframes ftIconBadgePop {
-  0% {
-    transform: scale(0.82);
-    opacity: 0.7;
-  }
-  65% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  animation: none !important;
 }
 
 /* Safety Guarantee: Default resting state is ALWAYS 100% visible */
@@ -5602,7 +5548,8 @@ button:active, .btn:active, .btn-icon:active, .form-tab-btn:active, .q-chip:acti
 }
 
 .modal-card form {
-  animation: ftFormCrossFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  /* Zero flicker / blink on tab change */
+  transition: opacity 0.15s ease !important;
 }
 
 /* Modal Open Spring Entrance */

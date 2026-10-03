@@ -1,6 +1,7 @@
 // ========================================================
 // 🔊 FINTRACK MASTER AUDIO & CUSTOM IN-APP MODAL ENGINE
 // - Web Audio API Pure Synthesizer (Zero-Latency & Offline)
+// - Anti-Race Condition Sound Lock (Prevents double/triple sounds)
 // - Custom In-App Confirmation Modal (Anti Browser Dialog)
 // - Multi-Asset Sound Effects (Uang Masuk, Transaksi, Scan, Hapus)
 // ========================================================
@@ -8,7 +9,7 @@
   'use strict';
 
   // ------------------------------------------------------
-  // 1. WEB AUDIO API SYNTHESIZER
+  // 1. WEB AUDIO API SYNTHESIZER & DEDUPLICATION LOCK
   // ------------------------------------------------------
   let audioCtx = null;
   let isSoundMuted = false;
@@ -16,6 +17,20 @@
   try {
     isSoundMuted = localStorage.getItem('fintrack_sound_enabled') === 'false';
   } catch (_) {}
+
+  // Dedup timestamps to prevent race conditions / double / triple sounds
+  let lastMajorSoundTime = 0;
+  let lastTapSoundTime = 0;
+  const MAJOR_SOUND_DEBOUNCE_MS = 450;
+  const TAP_SOUND_DEBOUNCE_MS = 220;
+  let pendingTapTimer = null;
+
+  function cancelPendingTap() {
+    if (pendingTapTimer) {
+      clearTimeout(pendingTapTimer);
+      pendingTapTimer = null;
+    }
+  }
 
   function getAudioContext() {
     if (isSoundMuted) return null;
@@ -35,22 +50,47 @@
     }
   }
 
-  // Pre-unlock AudioContext on first user interaction (Mobile Chrome / Safari compliance)
+  // Pre-unlock AudioContext on first user interaction
   ['click', 'touchstart', 'pointerdown', 'keydown'].forEach((evt) => {
     window.addEventListener(evt, () => {
       getAudioContext();
     }, { once: true, passive: true });
   });
 
+  function canPlayMajorSound() {
+    if (isSoundMuted) return false;
+    cancelPendingTap(); // Instantly abort any queued tap sound
+    const now = performance.now();
+    if (now - lastMajorSoundTime < MAJOR_SOUND_DEBOUNCE_MS) {
+      return false; // Suppress duplicate major sound
+    }
+    lastMajorSoundTime = now;
+    return true;
+  }
+
+  function canPlayTapSound() {
+    if (isSoundMuted) return false;
+    const now = performance.now();
+    // If a major sound played recently, suppress tap sound
+    if (now - lastMajorSoundTime < MAJOR_SOUND_DEBOUNCE_MS) {
+      return false;
+    }
+    // Debounce tap sounds
+    if (now - lastTapSoundTime < TAP_SOUND_DEBOUNCE_MS) {
+      return false;
+    }
+    lastTapSoundTime = now;
+    return true;
+  }
+
   // 💰 1. UANG MASUK (Cash Register & Golden Coins Shimmer)
   function playCashSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
       const now = ctx.currentTime;
 
-      // Arpeggiated upbeat chord: D5 (587Hz), G5 (784Hz), B5 (988Hz), D6 (1175Hz)
       const notes = [
         { freq: 587.33, start: 0.00, dur: 0.16, vol: 0.22, type: 'triangle' },
         { freq: 783.99, start: 0.07, dur: 0.18, vol: 0.26, type: 'triangle' },
@@ -81,13 +121,12 @@
 
   // ✨ 2. TRANSAKSI BERHASIL / HITUNG BERHASIL (Apple Pay Style Dual Chime)
   function playSuccessSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
       const now = ctx.currentTime;
 
-      // Bell 1: Eb5 (622Hz) -> Bell 2: Bb5 (932Hz)
       const chimes = [
         { freq: 622.25, start: 0.00, dur: 0.25, vol: 0.25 },
         { freq: 932.33, start: 0.09, dur: 0.45, vol: 0.35 }
@@ -115,7 +154,7 @@
 
   // 📡 3. SCAN QRIS / STRUK MEMINDAI (Digital Laser Radar Sweep)
   function playScanSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -139,8 +178,14 @@
   }
 
   // 🎯 4. SCAN QRIS BERHASIL TERDETEKSI (Recognition Bell)
-  function playDetectionSound() {
-    if (isSoundMuted) return;
+  function playDetectionSound(force = false) {
+    if (force) {
+      if (isSoundMuted) return;
+      cancelPendingTap();
+      lastMajorSoundTime = performance.now();
+    } else {
+      if (!canPlayMajorSound()) return;
+    }
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -171,7 +216,7 @@
 
   // 🗑️ 5. HAPUS DATA MUTASI / TRANSAKSI (Descending Swoosh Pop)
   function playDeleteSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -196,7 +241,7 @@
 
   // ⚠️ 6. ERROR / GAGAL (Soft Double Low Boop)
   function playErrorSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -212,7 +257,7 @@
         osc.frequency.setValueAtTime(t.freq, now + t.start);
 
         gain.gain.setValueAtTime(0.0001, now + t.start);
-        gain.gain.linearRampToValueAtTime(0.24, now + t.start + 0.02);
+        gain.gain.linearRampToValueAtTime(0.24, now + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + t.start + t.dur);
 
         osc.connect(gain);
@@ -225,7 +270,7 @@
 
   // 🔔 7. WARNING / PERINGATAN (Amber Tone)
   function playWarningSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -234,8 +279,8 @@
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(466.16, now); // Bb4
-      osc.frequency.exponentialRampToValueAtTime(415.30, now + 0.20); // Ab4
+      osc.frequency.setValueAtTime(466.16, now);
+      osc.frequency.exponentialRampToValueAtTime(415.30, now + 0.20);
 
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.linearRampToValueAtTime(0.22, now + 0.02);
@@ -248,9 +293,8 @@
     } catch (_) {}
   }
 
-  // 👆 8. TACTILE TAP / CLICK FEEDBACK ("Ketika Mau Ngapa-Ngapain")
-  function playTapSound() {
-    if (isSoundMuted) return;
+  // 👆 8. TACTILE TAP / CLICK FEEDBACK (Strictly Single Sound)
+  function executeTapSound() {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -273,14 +317,31 @@
     } catch (_) {}
   }
 
-  // 🪙 9. ANIMASI HITUNG UANG (Rapid Mechanical Money Counter Flutter & Final Ding)
+  function playTapSound(immediate = false) {
+    if (!canPlayTapSound()) return;
+    if (immediate) {
+      executeTapSound();
+      return;
+    }
+    cancelPendingTap();
+    pendingTapTimer = setTimeout(() => {
+      pendingTapTimer = null;
+      if (performance.now() - lastMajorSoundTime >= MAJOR_SOUND_DEBOUNCE_MS) {
+        executeTapSound();
+      }
+    }, 35);
+  }
+
+  // 🪙 9. ANIMASI HITUNG UANG (Rapid Mechanical Flutter Ticks + Final Ding)
   function playMoneyCounterStream(durationMs = 650) {
     if (isSoundMuted) return;
+    cancelPendingTap();
+    lastMajorSoundTime = performance.now() + durationMs;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
       const now = ctx.currentTime;
-      const count = 15; // 15 rapid flutter ticks
+      const count = 12; // 12 rhythmic mechanical ticks
       const interval = (durationMs / 1000) / count;
 
       for (let i = 0; i < count; i++) {
@@ -288,24 +349,23 @@
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
-        // Pitch rises smoothly from 720Hz up to 1600Hz as the counter ticks up!
-        const freq = 720 + (i * 60);
+        const freq = 750 + (i * 65);
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, tickTime);
 
         gain.gain.setValueAtTime(0.0001, tickTime);
-        gain.gain.linearRampToValueAtTime(0.14, tickTime + 0.002);
-        gain.gain.exponentialRampToValueAtTime(0.0001, tickTime + 0.024);
+        gain.gain.linearRampToValueAtTime(0.12, tickTime + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0001, tickTime + 0.022);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(tickTime);
-        osc.stop(tickTime + 0.024);
+        osc.stop(tickTime + 0.022);
       }
 
-      // Finale bell / triumphant ding when counting reaches the final number!
+      // Final ding when count finishes
       setTimeout(() => {
-        playDetectionSound();
+        playDetectionSound(true);
       }, durationMs);
     } catch (e) {
       console.warn('Money counter sound failed:', e);
@@ -314,7 +374,7 @@
 
   // 🪟 10. MODAL POPUP OPEN & CLOSE
   function playModalOpenSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -325,7 +385,7 @@
       osc.frequency.setValueAtTime(320, now);
       osc.frequency.exponentialRampToValueAtTime(560, now + 0.12);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(0.16, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -335,7 +395,7 @@
   }
 
   function playModalCloseSound() {
-    if (isSoundMuted) return;
+    if (!canPlayMajorSound()) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -428,30 +488,20 @@
     if (cancelBtn) cancelBtn.textContent = cancelText;
 
     if (type === 'danger') {
-      if (iconWrap) {
-        iconWrap.className = 'ft-confirm-icon-wrap is-danger';
-      }
+      if (iconWrap) iconWrap.className = 'ft-confirm-icon-wrap is-danger';
       if (icon) icon.className = 'ph-bold ph-trash';
       if (btnIcon) btnIcon.className = 'ph-bold ph-trash';
-      if (okBtn) {
-        okBtn.className = 'ft-confirm-btn ft-confirm-ok is-danger';
-      }
+      if (okBtn) okBtn.className = 'ft-confirm-btn ft-confirm-ok is-danger';
     } else {
-      if (iconWrap) {
-        iconWrap.className = 'ft-confirm-icon-wrap is-info';
-      }
+      if (iconWrap) iconWrap.className = 'ft-confirm-icon-wrap is-info';
       if (icon) icon.className = 'ph-bold ph-question';
       if (btnIcon) btnIcon.className = 'ph-bold ph-check';
-      if (okBtn) {
-        okBtn.className = 'ft-confirm-btn ft-confirm-ok is-info';
-      }
+      if (okBtn) okBtn.className = 'ft-confirm-btn ft-confirm-ok is-info';
     }
 
-    // Play warning sound when modal pops up
     playWarningSound();
 
     modal.style.display = 'flex';
-    // Force DOM reflow for CSS transition
     void modal.offsetWidth;
     modal.classList.add('is-open');
 
@@ -493,7 +543,7 @@
     document.addEventListener('keydown', handleKey);
   };
 
-  // Replace native window.alert globally so no ugly browser popup appears
+  // Replace native window.alert globally
   window.alert = function(msg) {
     if (window.showToastMessage) {
       window.showToastMessage(msg, 'warning', 4200, 'Perhatian');
@@ -503,37 +553,32 @@
   };
 
   // ------------------------------------------------------
-  // 3. ATTACH TACTILE SOUND TO ALL CLICKABLE & INTERACTIVE ELEMENTS
-  // (Uses Capture Phase so React stopPropagation cannot block it!)
+  // 3. ATTACH SINGLE TACTILE SOUND TO CLICKABLE ELEMENTS
+  // (Uses capture-phase 'click' exclusively - zero double firing)
   // ------------------------------------------------------
-  let lastTapTime = 0;
+  window.addEventListener('click', (e) => {
+    // Only primary button (left mouse or finger)
+    if (e.button !== undefined && e.button !== 0) return;
 
-  function handleUniversalTap(e) {
-    const now = Date.now();
-    if (now - lastTapTime < 45) return; // Debounce double triggers
+    getAudioContext();
 
     const target = e.target;
     if (!target) return;
 
-    // Check if the element or any ancestor is interactive/clickable
     const interactive = target.closest(
       'button, a, [role="button"], input, select, textarea, label, ' +
       '.btn, .btn-primary, .btn-secondary, .btn-icon, .q-chip, .tab-btn, .form-tab-btn, ' +
       '.mobile-nav-btn, .mobile-nav-action-btn, .speed-dial-btn, .speed-dial-action, .fab-btn, ' +
       '.wallet-card, .wallet-item, .tx-item, .transaction-row, .chip, .period-pill, ' +
       '.statement-period-pill, .statement-btn, .statement-db-btn, .btn-receipt-close, ' +
-      '.ft-toast-close, .modal-backdrop, .section-action, [data-clickable], [onclick]'
+      '.ft-toast-close, .section-action, [data-clickable]'
     );
 
     if (interactive) {
-      if (interactive.id === 'ft-confirm-btn-ok') return; // Handled by delete/confirm sound
-      lastTapTime = now;
+      if (interactive.id === 'ft-confirm-btn-ok') return;
       playTapSound();
     }
-  }
+  }, { capture: true, passive: true });
 
-  window.addEventListener('pointerdown', handleUniversalTap, true); // Capture phase!
-  window.addEventListener('click', handleUniversalTap, true); // Fallback capture!
-
-  console.log('✅ FinTrack Audio Engine & Custom In-App Modal initialized!');
+  console.log('✅ FinTrack Audio Engine (Anti-Race Condition) initialized!');
 })();

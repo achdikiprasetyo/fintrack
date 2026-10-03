@@ -1,10 +1,10 @@
-const CACHE_NAME = 'fintrack-cache-v84';
+const CACHE_NAME = 'fintrack-cache-v85';
 const STATIC_ASSETS = [
   '/finance/',
   '/finance/index.html',
-  '/finance/css/app.css?v=2.3',
+  '/finance/css/app.css?v=2.4',
   '/finance/css/vendor.css',
-  '/finance/js/audio-soundfx.js?v=2.3',
+  '/finance/js/audio-soundfx.js?v=2.4',
   '/finance/js/app-core.js',
   '/finance/js/toast.js',
   '/finance/js/pwa-init.js',
