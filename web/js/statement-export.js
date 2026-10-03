@@ -226,8 +226,8 @@
       backupJsonBtn.addEventListener('click', () => {
         if (window.__fintrackBackupJson) {
           window.__fintrackBackupJson();
-        } else {
-          alert('Fungsi backup JSON siap.');
+        } else if (window.showToastMessage) {
+          window.showToastMessage('Fungsi backup JSON siap.', 'info', 3000, 'Backup Data');
         }
       });
     }
@@ -236,8 +236,8 @@
       restoreJsonBtn.addEventListener('click', () => {
         if (window.__fintrackRestoreJson) {
           window.__fintrackRestoreJson();
-        } else {
-          alert('Fungsi restore JSON siap.');
+        } else if (window.showToastMessage) {
+          window.showToastMessage('Fungsi restore JSON siap.', 'info', 3000, 'Restore Data');
         }
       });
     }
@@ -248,8 +248,6 @@
         if (currentFilteredList.length === 0) {
           if (window.showToastMessage) {
             window.showToastMessage('Tidak ada transaksi pada periode yang dipilih.', 'warning', 3800, 'Tidak Ada Data');
-          } else {
-            alert('Tidak ada data transaksi pada rentang periode yang dipilih.');
           }
           return;
         }
@@ -271,8 +269,6 @@
           console.error('Export error:', err);
           if (window.showToastMessage) {
             window.showToastMessage('Gagal membuat dokumen laporan: ' + (err.message || err), false, 5000, 'Unduh Gagal');
-          } else {
-            alert('Gagal membuat dokumen laporan: ' + (err.message || err));
           }
         } finally {
           if (downloadBtnText) downloadBtnText.innerHTML = originalText;
@@ -462,8 +458,6 @@
     if (!window.jspdf || !window.jspdf.jsPDF) {
       if (window.showToastMessage) {
         window.showToastMessage('Modul PDF sedang disiapkan. Silakan coba kembali dalam 2 detik.', 'warning', 3500, 'Menyiapkan Modul');
-      } else {
-        alert('Modul PDF sedang dimuat. Silakan coba kembali dalam 2 detik.');
       }
       return;
     }

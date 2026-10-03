@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fintrack-cache-v83';
+const CACHE_NAME = 'fintrack-cache-v84';
 const STATIC_ASSETS = [
   '/finance/',
   '/finance/index.html',

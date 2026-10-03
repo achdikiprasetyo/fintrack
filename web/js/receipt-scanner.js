@@ -19,14 +19,23 @@
         return audioCtx;
       }
 
-      // Silent audio & haptic stubs (vibrations and synthesizer sounds disabled as requested)
-      function playDetectionChime() {}
-      function playSuccessChime() {}
+      function playDetectionChime() {
+        if (window.playDetectionSound) window.playDetectionSound();
+      }
+      function playSuccessChime() {
+        if (window.playSuccessSound) window.playSuccessSound();
+      }
 
       // Rolling count-up number animation for detected nominal
       function animateCountUp(targetAmount, element) {
         if (!element || targetAmount <= 0) return;
         const duration = 650; // ms
+
+        // Play realistic cash counter sound flutter & ding!
+        if (window.playMoneyCounterStream) {
+          window.playMoneyCounterStream(duration);
+        }
+
         const startTime = performance.now();
 
         // Trigger neon glow pulse

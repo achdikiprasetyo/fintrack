@@ -273,6 +273,88 @@
     } catch (_) {}
   }
 
+  // 🪙 9. ANIMASI HITUNG UANG (Rapid Mechanical Money Counter Flutter & Final Ding)
+  function playMoneyCounterStream(durationMs = 650) {
+    if (isSoundMuted) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const count = 15; // 15 rapid flutter ticks
+      const interval = (durationMs / 1000) / count;
+
+      for (let i = 0; i < count; i++) {
+        const tickTime = now + (i * interval);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        // Pitch rises smoothly from 720Hz up to 1600Hz as the counter ticks up!
+        const freq = 720 + (i * 60);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, tickTime);
+
+        gain.gain.setValueAtTime(0.0001, tickTime);
+        gain.gain.linearRampToValueAtTime(0.14, tickTime + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0001, tickTime + 0.024);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(tickTime);
+        osc.stop(tickTime + 0.024);
+      }
+
+      // Finale bell / triumphant ding when counting reaches the final number!
+      setTimeout(() => {
+        playDetectionSound();
+      }, durationMs);
+    } catch (e) {
+      console.warn('Money counter sound failed:', e);
+    }
+  }
+
+  // 🪟 10. MODAL POPUP OPEN & CLOSE
+  function playModalOpenSound() {
+    if (isSoundMuted) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(560, now + 0.12);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.16, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    } catch (_) {}
+  }
+
+  function playModalCloseSound() {
+    if (isSoundMuted) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(240, now + 0.10);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.14, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.10);
+    } catch (_) {}
+  }
+
   // Expose sound methods globally
   window.playCashSound = playCashSound;
   window.playSuccessSound = playSuccessSound;
@@ -285,6 +367,10 @@
   window.playWarningSound = playWarningSound;
   window.playTapSound = playTapSound;
   window.playTactileTick = playTapSound;
+  window.playMoneyCounterStream = playMoneyCounterStream;
+  window.playCashCounterTick = playMoneyCounterStream;
+  window.playModalOpenSound = playModalOpenSound;
+  window.playModalCloseSound = playModalCloseSound;
 
   // ------------------------------------------------------
   // 2. CUSTOM IN-APP CONFIRMATION MODAL (ANTI BROWSER CHROME)
@@ -417,17 +503,37 @@
   };
 
   // ------------------------------------------------------
-  // 3. ATTACH TACTILE SOUND TO INTERACTIVE BUTTONS
+  // 3. ATTACH TACTILE SOUND TO ALL CLICKABLE & INTERACTIVE ELEMENTS
+  // (Uses Capture Phase so React stopPropagation cannot block it!)
   // ------------------------------------------------------
-  document.addEventListener('click', (e) => {
-    const target = e.target.closest('button, .q-chip, .tab-btn, .mobile-nav-btn, .btn, .wallet-item, .chip');
+  let lastTapTime = 0;
+
+  function handleUniversalTap(e) {
+    const now = Date.now();
+    if (now - lastTapTime < 45) return; // Debounce double triggers
+
+    const target = e.target;
     if (!target) return;
-    
-    // Skip if it is already a submit that triggers its own major sound
-    if (target.id === 'ft-confirm-btn-ok') return;
-    
-    playTapSound();
-  }, { passive: true });
+
+    // Check if the element or any ancestor is interactive/clickable
+    const interactive = target.closest(
+      'button, a, [role="button"], input, select, textarea, label, ' +
+      '.btn, .btn-primary, .btn-secondary, .btn-icon, .q-chip, .tab-btn, .form-tab-btn, ' +
+      '.mobile-nav-btn, .mobile-nav-action-btn, .speed-dial-btn, .speed-dial-action, .fab-btn, ' +
+      '.wallet-card, .wallet-item, .tx-item, .transaction-row, .chip, .period-pill, ' +
+      '.statement-period-pill, .statement-btn, .statement-db-btn, .btn-receipt-close, ' +
+      '.ft-toast-close, .modal-backdrop, .section-action, [data-clickable], [onclick]'
+    );
+
+    if (interactive) {
+      if (interactive.id === 'ft-confirm-btn-ok') return; // Handled by delete/confirm sound
+      lastTapTime = now;
+      playTapSound();
+    }
+  }
+
+  window.addEventListener('pointerdown', handleUniversalTap, true); // Capture phase!
+  window.addEventListener('click', handleUniversalTap, true); // Fallback capture!
 
   console.log('✅ FinTrack Audio Engine & Custom In-App Modal initialized!');
 })();
