@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FinTrack" />
+    <meta name="application-name" content="FinTrack" />
+    <meta name="description" content="Aplikasi pelacakan kekayaan bersih otomatis terintegrasi Seabank, ATM, Reksadana Bibit, dan Emas Treasury tanpa kalkulator manual." />
+
+    <title>FinTrack — Multi-Asset Net Worth Hub</title>
+
+    <!-- PWA Icons & Manifest -->
+    <link rel="icon" type="image/png" sizes="64x64" href="/finance/icons/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/finance/icons/icon-192.png" />
+    <link rel="manifest" href="/finance/manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/finance/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/finance/icons/icon-192.png" />
+
+    <!-- Phosphor Icons (Non-blocking) -->
+    <script defer src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Flatpickr Range Calendar -->
+    <link rel="stylesheet" href="/finance/vendor/flatpickr.dark.min.css">
+    <script defer src="/finance/vendor/flatpickr.min.js"></script>
+
+    <!-- Apache ECharts (Core Analytics Engine) -->
+    <script defer src="/finance/vendor/echarts.min.js"></script>
+
+    <!-- FinTrack Dynamic Runtime Configuration (Injected from .env via Backend) -->
+    <script src="/api/config.js"></script>
+    <script type="module" crossorigin src="/finance/js/app-core.js"></script>
+    <script>
+      (function() {
+        try {
+          var t = sessionStorage.getItem('fintrack_active_tab') || 'assets';
+          document.documentElement.setAttribute('data-active-tab', t);
+          if (typeof navigator !== 'undefined') {
+            navigator.vibrate = function() { return false; };
+          }
+          window.playTactileTick = function() {};
+          window.playSuccessChime = function() {};
+          window.playDetectionChime = function() {};
+        } catch(e) {}
+      })();
+    </script>
+    <link rel="stylesheet" crossorigin href="/finance/css/vendor.css">
+    <!-- FinTrack Modular Luxury Stylesheet -->
+    <link rel="stylesheet" href="/finance/css/app.css?v=2.3">
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Hidden file input for Receipt scanning -->
+    <input type="file" id="receipt-file-input" accept="image/*" style="display: none;" />
+
+    <!-- RECEIPT SCANNER & CONFIRMATION MODAL -->
+    <div id="receipt-scan-modal" class="receipt-modal-backdrop" style="display: none; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(8, 10, 15, 0.88) !important; backdrop-filter: blur(14px) !important; -webkit-backdrop-filter: blur(14px) !important; z-index: 9999999 !important; align-items: center !important; justify-content: center !important; padding: 0.85rem !important; box-sizing: border-box !important;">
+      <div class="receipt-modal-card" style="width: 100% !important; max-width: 440px !important; max-height: 88vh !important; overflow-y: auto !important; background: linear-gradient(165deg, #131a2c 0%, #0d121f 100%) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 20px !important; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 25px rgba(99, 102, 241, 0.2) !important; padding: 1.25rem !important; box-sizing: border-box !important; margin: auto !important;">
+        <div class="receipt-modal-header">
+          <div class="receipt-modal-title">
+            <div class="receipt-title-icon"><i class="ph ph-sparkle"></i></div>
+            <div>
+              <h3>Catat Pengeluaran Otomatis</h3>
+              <p id="receipt-modal-subtitle">Analisis Resi & Bukti Pembayaran AI</p>
+            </div>
+          </div>
+          <button type="button" class="btn-receipt-close" id="btn-close-receipt-modal"><i class="ph ph-x"></i></button>
+        </div>
+
+        <!-- PREVIEW & SCANNING STATE -->
+        <div id="receipt-scanning-state" class="receipt-scanning-wrapper" style="display: none;">
+          <div class="receipt-image-preview-container">
+            <img id="receipt-preview-img" src="" alt="Bukti Transaksi" style="width: 100% !important; height: 100% !important; max-height: 220px !important; object-fit: cover !important;" />
+            <div class="receipt-hud-grid"></div>
+            <div class="receipt-corner-tr"></div>
+            <div class="receipt-corner-bl"></div>
+            <div class="receipt-scan-laser"></div>
+          </div>
+          <div class="receipt-scanning-indicator">
+            <div class="scanning-spinner"></div>
+            <div class="scanning-text">
+              <strong id="scanning-step-title">Memindai Citra Digital...</strong>
+              <span id="scanning-step-desc">Mendeteksi bank, QRIS, nominal, dan toko via Gemini Vision</span>
+            </div>
+          </div>
+          <div class="hud-step-badge" id="hud-step-badge">
+            <i class="ph ph-cpu" style="font-size: 0.95rem;"></i>
+            <span id="hud-step-text">Memindai Citra Digital...</span>
+          </div>
+        </div>
+
+        <!-- CONFIRMATION FORM STATE -->
+        <div id="receipt-form-state" class="receipt-form-wrapper" style="display: none;">
+          <div class="receipt-detected-banner" id="receipt-detected-banner">
+            <i class="ph ph-check-circle" style="color: #34d399; font-size: 1.15rem;"></i>
+            <span id="receipt-detected-summary">QRIS BCA Berhasil Terdeteksi</span>
+          </div>
+
+          <div class="receipt-compact-preview" style="display: flex; align-items: center; gap: 0.75rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 0.45rem 0.65rem; margin-bottom: 0.9rem;">
+            <img id="receipt-compact-img" src="" alt="Thumbnail Struk" style="width: 44px !important; height: 52px !important; min-width: 44px !important; max-width: 44px !important; min-height: 52px !important; max-height: 52px !important; object-fit: cover !important; border-radius: 8px !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; flex-shrink: 0 !important;" />
+            <div class="receipt-compact-meta" style="display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+              <span class="meta-label">DITEMUKAN DARI STRUK</span>
+              <span class="meta-val" id="receipt-meta-val">-</span>
+            </div>
+          </div>
+
+          <form id="receipt-confirm-form">
+            <!-- Nominal Input -->
+            <div class="receipt-field-group">
+              <label>Nominal Pengeluaran</label>
+              <div class="receipt-input-nominal-wrap">
+                <span class="nominal-prefix">Rp</span>
+                <input type="text" id="receipt-input-amount" class="receipt-input-large" required inputmode="numeric" />
+              </div>
+            </div>
+
+            <!-- Sumber Dompet -->
+            <div class="receipt-field-group">
+              <label>Sumber Dompet / Bank</label>
+              <select id="receipt-select-wallet" class="receipt-input" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <!-- Toko / Penerima -->
+            <div class="receipt-field-group">
+              <label>Toko / Merchant / Penerima</label>
+              <input type="text" id="receipt-input-merchant" class="receipt-input" placeholder="Contoh: Kopi Kenangan" required />
+            </div>
+
+            <!-- Kategori & Tanggal Grid -->
+            <div class="receipt-grid-2">
+              <div class="receipt-field-group">
+                <label>Kategori Pos</label>
+                <select id="receipt-select-category" class="receipt-input" required>
+                  <option value="Makanan & Minuman">Makanan & Minuman</option>
+                  <option value="Belanja & Kebutuhan">Belanja & Kebutuhan</option>
+                  <option value="Transportasi">Transportasi</option>
+                  <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
+                  <option value="Hiburan & Hobi">Hiburan & Hobi</option>
+                  <option value="Keluarga & Pribadi">Keluarga & Pribadi</option>
+                  <option value="Kesehatan">Kesehatan</option>
+                  <option value="Transfer Antar Rekening">Transfer Antar Rekening</option>
+                  <option value="Lain-lain">Lain-lain</option>
+                </select>
+              </div>
+              <div class="receipt-field-group">
+                <label>Waktu Transaksi</label>
+                <input type="datetime-local" id="receipt-input-date" class="receipt-input" />
+              </div>
+            </div>
+
+            <!-- Catatan -->
+            <div class="receipt-field-group">
+              <label>Catatan Transaksi</label>
+              <input type="text" id="receipt-input-note" class="receipt-input" placeholder="Contoh: QRIS Kopi Kenangan" />
+            </div>
+
+            <div class="receipt-modal-actions">
+              <button type="button" class="btn-receipt-cancel" id="btn-cancel-receipt">Batal</button>
+              <button type="submit" class="btn-receipt-submit" id="btn-submit-receipt">
+                <i class="ph ph-check-circle-bold"></i>
+                <span>Konfirmasi & Catat</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- SUCCESS CELEBRATION STATE -->
+        <div id="receipt-success-state" class="receipt-success-wrapper" style="display: none;">
+          <div class="success-icon-burst">
+            <i class="ph ph-check-bold"></i>
+          </div>
+          <h3 class="success-headline">Pengeluaran Berhasil Dicatat!</h3>
+          <p class="success-subline" id="receipt-success-subline">Transaksi tersinkronisasi otomatis dengan saldo dompet</p>
+
+          <div class="success-amount-pill" id="receipt-success-amount">- Rp 0</div>
+
+          <div class="success-meta-card">
+            <div class="success-meta-row">
+              <span class="label">Merchant / Toko:</span>
+              <span class="val" id="receipt-success-merchant">-</span>
+            </div>
+            <div class="success-meta-row">
+              <span class="label">Sumber Dompet:</span>
+              <span class="val" id="receipt-success-wallet">-</span>
+            </div>
+            <div class="success-meta-row">
+              <span class="label">Sisa Saldo Akun:</span>
+              <span class="val" style="color: #38bdf8;" id="receipt-success-balance">-</span>
+            </div>
+            <div class="success-meta-row">
+              <span class="label">Kategori Pos:</span>
+              <span class="val" id="receipt-success-category">-</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-success-finish" id="btn-success-finish">
+            <span>Selesai & Tutup</span>
+            <i class="ph ph-arrow-right-bold"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PWA Install Modal (Universal for Android & iOS) -->
+    <div id="pwa-modal" class="pwa-modal-overlay">
+      <div class="pwa-modal-content">
+        <div class="pwa-modal-icon">
+          <img src="/finance/icons/icon-192.png" alt="FinTrack" />
+        </div>
+        <h3 class="pwa-modal-title">Pasang FinTrack App</h3>
+        <p class="pwa-modal-desc" id="pwa-modal-desc">
+          Pasang aplikasi FinTrack di layar utama HP kamu agar bisa diakses instan layaknya aplikasi native tanpa browser bar.
+        </p>
+        
+        <div id="pwa-ios-steps" class="pwa-step-box" style="display: none;">
+          <div>1. Ketuk ikon <b>Bagikan (Share / <svg style="display:inline;vertical-align:middle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>)</b> di bilah bawah Safari.</div>
+          <div>2. Gulir ke bawah, pilih <b>Tambahkan ke Layar Utama</b>.</div>
+          <div>3. Ketuk <b>Tambah</b> di pojok kanan atas.</div>
+        </div>
+
+        <button id="pwa-action-btn" class="pwa-btn-primary">Instal Sekarang 📲</button>
+        <button id="pwa-close-btn" class="pwa-btn-close">Nanti Saja</button>
+      </div>
+    </div>
+
+    <!-- PWA Service Worker & Install Logic -->
+    
+
+    <!-- Fullscreen Dopamine Celebration Confetti Canvas -->
+    <canvas id="dopamine-confetti-canvas"></canvas>
+<!-- FINTRACK_ENHANCE_START -->
+
+
+
+<!-- LUXURY_HERO_START -->
+
+
+<!-- LUXURY_HERO_END -->
+<!-- FINTRACK_ENHANCE_END -->
+  
+<!-- FINTRACK_SPEED_DIAL_START -->
+
+
+<!-- Speed Dial Overlay -->
+<div id="speed-dial-backdrop" class="speed-dial-backdrop">
+  <div class="speed-dial-container">
+    <!-- Bulatan 1 (Bawah): Input Manual -->
+    <div class="speed-dial-item" id="sd-opt-manual">
+      <div class="speed-dial-bubble bubble-manual">
+        <i class="ph-bold ph-pencil-simple-line" style="font-size: 22px;"></i>
+      </div>
+      <span class="speed-dial-label">Input Manual</span>
+    </div>
+
+    <!-- Bulatan 2 (Tengah): AI Smart Input -->
+    <div class="speed-dial-item" id="sd-opt-ai">
+      <div class="speed-dial-bubble bubble-ai">
+        <i class="ph-bold ph-sparkle" style="font-size: 22px;"></i>
+      </div>
+      <span class="speed-dial-label">AI Smart Input</span>
+    </div>
+
+    <!-- Bulatan 3 (Atas): Scan Resi / Struk -->
+    <div class="speed-dial-item" id="sd-opt-scan">
+      <div class="speed-dial-bubble bubble-scan">
+        <i class="ph-bold ph-camera" style="font-size: 22px;"></i>
+      </div>
+      <span class="speed-dial-label">Scan Resi / Struk</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- FINTRACK_SPEED_DIAL_END -->
+
+
+
+
+
+
+
+
+<!-- COMPACT_WALLETS_START -->
+
+
+
+<!-- BIBIT_WEALTH_START -->
+
+
+
+<!-- BIBIT_WEALTH_END -->
+
+
+<!-- PERIOD FILTER MODAL & FLATPICKR RANGE (REFINED ACCORDION + SMART DATA DOTS) -->
+<div id="fintrack-period-modal" class="period-modal-overlay" style="display: none;">
+  <div class="period-modal-backdrop" id="period-modal-backdrop"></div>
+  <div class="period-modal-sheet">
+    <div class="period-modal-handle"></div>
+    <div class="period-modal-header">
+      <div class="period-modal-title">
+        <i class="ph-bold ph-calendar"></i>
+        <span>Filter Periode Transaksi</span>
+      </div>
+      <button type="button" class="period-modal-close-btn" id="period-modal-close-btn">
+        <i class="ph-bold ph-x"></i>
+      </button>
+    </div>
+
+    <!-- Quick Presets -->
+    <div class="period-presets-section">
+      <div class="period-section-label">PILIHAN CEPAT (PRESETS)</div>
+      <div class="period-presets-grid">
+        <button type="button" class="period-preset-chip active" data-preset="all">
+          <i class="ph-bold ph-clock-counter-clockwise"></i> Semua Waktu
+        </button>
+        <button type="button" class="period-preset-chip" data-preset="this_month">
+          <i class="ph-bold ph-calendar-check"></i> Bulan Ini
+        </button>
+        <button type="button" class="period-preset-chip" data-preset="last_month">
+          <i class="ph-bold ph-calendar-blank"></i> Bulan Lalu
+        </button>
+        <button type="button" class="period-preset-chip" data-preset="last_3_months">
+          <i class="ph-bold ph-chart-line-up"></i> 3 Bulan Terakhir
+        </button>
+        <button type="button" class="period-preset-chip" data-preset="this_year">
+          <i class="ph-bold ph-trend-up"></i> Tahun Ini
+        </button>
+        <!-- Toggle button to expand/collapse custom calendar -->
+        <button type="button" class="period-preset-chip period-custom-toggle-btn" id="period-custom-toggle-btn" data-preset="custom">
+          <span><i class="ph-bold ph-calendar-plus"></i> Kustom Rentang Tanggal</span>
+          <i class="ph-bold ph-caret-down" id="custom-toggle-caret" style="font-size: 11px;"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom Range Flatpickr Calendar (Collapsed by Default) -->
+    <div class="period-calendar-section" id="period-calendar-section">
+      <div class="period-section-label">PILIH TANGGAL PADA KALENDER</div>
+      <div class="period-range-display-bar">
+        <div class="period-range-badge" id="period-range-start-badge">
+          <span class="range-sub">DARI</span>
+          <span class="range-date" id="range-start-val">-</span>
+        </div>
+        <div class="period-range-arrow">➔</div>
+        <div class="period-range-badge" id="period-range-end-badge">
+          <span class="range-sub">SAMPAI</span>
+          <span class="range-date" id="range-end-val">-</span>
+        </div>
+      </div>
+
+      <div class="flatpickr-inline-wrapper">
+        <div id="flatpickr-inline-calendar"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="period-modal-actions">
+      <button type="button" class="period-btn-reset" id="period-btn-reset">
+        <i class="ph-bold ph-arrow-counter-clockwise"></i> Reset
+      </button>
+      <button type="button" class="period-btn-apply" id="period-btn-apply">
+        <i class="ph-bold ph-check"></i> Terapkan Filter
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- STATEMENT EXPORT MODAL (PDF & EXCEL WITH DATE RANGE) -->
+<div id="fintrack-statement-modal" class="statement-modal-overlay" style="display: none;">
+  <div class="statement-modal-backdrop" id="statement-modal-backdrop"></div>
+  <div class="statement-modal-sheet">
+    <div class="period-modal-handle"></div>
+    <div class="statement-modal-header">
+      <div class="statement-modal-title">
+        <i class="ph-bold ph-file-text"></i>
+        <span>Unduh Laporan Keuangan</span>
+      </div>
+      <button type="button" class="period-modal-close-btn" id="statement-modal-close-btn">
+        <i class="ph-bold ph-x"></i>
+      </button>
+    </div>
+
+    <!-- 1. Format Selection -->
+    <div class="statement-section-label">1. PILIH FORMAT LAPORAN</div>
+    <div class="statement-format-grid">
+      <div class="statement-format-card format-card-pdf active" data-format="pdf" id="format-card-pdf">
+        <div class="format-icon-wrap">
+          <i class="ph-bold ph-file-pdf"></i>
+        </div>
+        <div class="format-card-title">Dokumen PDF</div>
+        <div class="format-card-desc">e-Statement resmi A4 siap cetak & bukti keuangan</div>
+      </div>
+
+      <div class="statement-format-card format-card-excel" data-format="excel" id="format-card-excel">
+        <div class="format-icon-wrap">
+          <i class="ph-bold ph-file-xls"></i>
+        </div>
+        <div class="format-card-title">Spreadsheet Excel</div>
+        <div class="format-card-desc">Data tabular .CSV siap olah di Excel & Google Sheets</div>
+      </div>
+    </div>
+
+    <!-- 2. Period Selection -->
+    <div class="statement-section-label">2. PILIH PERIODE TRANSAKSI</div>
+    <div class="statement-presets-grid">
+      <button type="button" class="statement-preset-chip active" data-period="this_month">
+        <i class="ph-bold ph-calendar-check"></i> Bulan Ini
+      </button>
+      <button type="button" class="statement-preset-chip" data-period="last_month">
+        <i class="ph-bold ph-calendar-blank"></i> Bulan Lalu
+      </button>
+      <button type="button" class="statement-preset-chip" data-period="last_3_months">
+        <i class="ph-bold ph-chart-line-up"></i> 3 Bulan Terakhir
+      </button>
+      <button type="button" class="statement-preset-chip" data-period="this_year">
+        <i class="ph-bold ph-trend-up"></i> Tahun Ini
+      </button>
+      <button type="button" class="statement-preset-chip" data-period="all">
+        <i class="ph-bold ph-clock-counter-clockwise"></i> Semua Transaksi
+      </button>
+      <button type="button" class="statement-preset-chip statement-custom-toggle" id="statement-custom-toggle">
+        <span><i class="ph-bold ph-calendar-plus"></i> Kustom Rentang Tanggal</span>
+        <i class="ph-bold ph-caret-down" id="statement-custom-caret"></i>
+      </button>
+    </div>
+
+    <!-- Collapsible Date Inputs -->
+    <div class="statement-custom-box" id="statement-custom-box">
+      <div class="statement-date-inputs">
+        <div class="statement-date-group">
+          <span class="statement-date-label">DARI TANGGAL</span>
+          <input type="date" class="statement-date-input" id="statement-start-date" />
+        </div>
+        <div style="color: #64748b; font-size: 0.9rem; padding-top: 14px;">➔</div>
+        <div class="statement-date-group">
+          <span class="statement-date-label">SAMPAI TANGGAL</span>
+          <input type="date" class="statement-date-input" id="statement-end-date" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Preview Box -->
+    <div class="statement-preview-box">
+      <div class="statement-preview-stat">
+        <span class="preview-stat-sub">TOTAL DATA</span>
+        <span class="preview-stat-val count" id="export-preview-count">0 Data</span>
+      </div>
+      <div class="statement-preview-stat">
+        <span class="preview-stat-sub">PEMASUKAN</span>
+        <span class="preview-stat-val income" id="export-preview-income">Rp 0</span>
+      </div>
+      <div class="statement-preview-stat">
+        <span class="preview-stat-sub">PENGELUARAN</span>
+        <span class="preview-stat-val expense" id="export-preview-expense">Rp 0</span>
+      </div>
+    </div>
+
+    <!-- Download Action -->
+    <button type="button" class="statement-btn-download" id="statement-btn-download">
+      <i class="ph-bold ph-download-simple"></i>
+      <span id="statement-download-btn-text">Unduh Laporan (.pdf)</span>
+    </button>
+
+    <!-- Database Backup / Restore Footer -->
+    <div class="statement-db-footer">
+      <span>Database:</span>
+      <button type="button" class="statement-db-btn" id="statement-backup-json-btn">
+        <i class="ph-bold ph-database"></i> Backup JSON
+      </button>
+      <span>•</span>
+      <button type="button" class="statement-db-btn" id="statement-restore-json-btn">
+        <i class="ph-bold ph-upload-simple"></i> Restore JSON
+      </button>
+    </div>
+  </div>
+</div>
+
+    <!-- FinTrack Granular Feature Modules (AI-Friendly & Ultra-Fast) -->
+    <script src="/finance/js/toast.js?v=2.2"></script>
+    <script src="/finance/js/pwa-init.js?v=2.2"></script>
+    <script src="/finance/js/forex-usd.js?v=2.2"></script>
+    <script src="/finance/js/analytics-charts.js?v=2.2"></script>
+    <script src="/finance/js/tabs-engine.js?v=2.2"></script>
+    <script src="/finance/js/receipt-simulation.js?v=2.2"></script>
+    <script src="/finance/js/receipt-scanner.js?v=2.2"></script>
+    <script src="/finance/js/ui-enhancers.js?v=2.2"></script>
+    <script src="/finance/js/period-filter.js?v=2.2"></script>
+    <script src="/finance/js/statement-export.js?v=2.2"></script>
+  </body>
+</html>

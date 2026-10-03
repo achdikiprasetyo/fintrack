@@ -1,0 +1,17 @@
+[Unit]
+Description=FinTrack Telegram Bot Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/fintrack-bot
+EnvironmentFile=/home/ubuntu/fintrack-bot/.env
+ExecStart=/usr/local/bin/deno run --allow-net --allow-env --env-file=/home/ubuntu/fintrack-bot/.env /home/ubuntu/fintrack-bot/server/index.ts
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

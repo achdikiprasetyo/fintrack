@@ -1,0 +1,17 @@
+# Environment & Secrets
+.env
+.env.*
+config.local.js
+
+# Backup & logs
+*.bak
+*.bak_*
+.backup_archive/
+*.log
+
+# System & Agent files
+.DS_Store
+Thumbs.db
+.agents/
+.vscode/
+.idea/

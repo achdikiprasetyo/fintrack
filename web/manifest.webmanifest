@@ -1,0 +1,55 @@
+{
+  "id": "/finance/",
+  "name": "FinTrack",
+  "short_name": "FinTrack",
+  "description": "Multi-Asset Net Worth Hub & Personal Finance Tracker",
+  "start_url": "/finance/",
+  "scope": "/finance/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080a0f",
+  "theme_color": "#0a0d14",
+  "categories": ["finance", "productivity"],
+  "share_target": {
+    "action": "/finance/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "receipt",
+          "accept": ["image/*", "image/jpeg", "image/jpg", "image/png", "image/webp", ".jpg", ".jpeg", ".png", ".webp"]
+        }
+      ]
+    }
+  },
+  "icons": [
+    {
+      "src": "/finance/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/finance/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/finance/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/finance/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
