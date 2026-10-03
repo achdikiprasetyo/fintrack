@@ -5891,14 +5891,14 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-start !important;
-  padding: 0.5rem 0.55rem !important;
+  padding: 0.45rem 0.5rem !important;
   background: rgba(255, 255, 255, 0.03) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 12px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
-  gap: 0.2rem !important;
+  gap: 0.16rem !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   overflow: hidden !important;
 }
@@ -5913,14 +5913,14 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   flex-direction: row !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
-  gap: 0.3rem !important;
+  gap: 0.22rem !important;
   width: 100% !important;
   min-width: 0 !important;
 }
 
 .legend-dot {
-  width: 6px !important;
-  height: 6px !important;
+  width: 5px !important;
+  height: 5px !important;
   border-radius: 50% !important;
   flex-shrink: 0 !important;
   display: inline-block !important;
@@ -5942,7 +5942,7 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
 }
 
 .alloc-chip-name {
-  font-size: clamp(0.58rem, 2vw, 0.66rem) !important;
+  font-size: clamp(0.56rem, 1.8vw, 0.64rem) !important;
   font-weight: 700 !important;
   color: #94a3b8 !important;
   white-space: nowrap !important;
@@ -5950,26 +5950,55 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   text-overflow: ellipsis !important;
   min-width: 0 !important;
   line-height: 1.2 !important;
+  letter-spacing: -0.015em !important;
 }
 
 .alloc-chip-val {
   font-family: 'JetBrains Mono', monospace !important;
-  font-size: clamp(0.64rem, 2.3vw, 0.74rem) !important;
+  font-size: clamp(0.62rem, 2.1vw, 0.72rem) !important;
   font-weight: 700 !important;
   color: #f1f5f9 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  line-height: 1.25 !important;
+  line-height: 1.2 !important;
   letter-spacing: -0.02em !important;
   width: 100% !important;
+  display: block !important;
+}
+
+.alloc-chip-usd {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: clamp(0.56rem, 1.9vw, 0.64rem) !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.01em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
+  opacity: 0.9 !important;
+  display: block !important;
+}
+
+.alloc-chip.chip-cash .alloc-chip-usd {
+  color: #38bdf8 !important;
+}
+
+.alloc-chip.chip-gold .alloc-chip-usd {
+  color: #fbbf24 !important;
+}
+
+.alloc-chip.chip-bibit .alloc-chip-usd {
+  color: #34d399 !important;
 }
 
 .alloc-chip-pct {
-  font-size: clamp(0.68rem, 2.4vw, 0.76rem) !important;
+  font-size: clamp(0.66rem, 2.2vw, 0.74rem) !important;
   font-weight: 800 !important;
   font-family: 'Plus Jakarta Sans', sans-serif !important;
   line-height: 1 !important;
+  margin-top: 1px !important;
 }
 
 .alloc-chip.chip-cash .alloc-chip-pct {
@@ -8609,12 +8638,6 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   gap: 0.4rem !important;
 }
 
-.alloc-chip-val {
-  display: flex !important;
-  align-items: baseline !important;
-  flex-wrap: wrap !important;
-  gap: 0.25rem !important;
-}
 
 /* Global Privacy Mode Body State */
 body.fintrack-privacy-active .privacy-sensitive {
