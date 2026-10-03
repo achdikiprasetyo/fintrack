@@ -7167,9 +7167,8 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   display: none !important;
 }
 
-/* Yield / Admin Fee Mini Badges (ORDER: 1 -> Placed ABOVE nominal balance) */
-.wallet-card > div:last-child > div:last-child {
-  order: 1 !important;
+/* Yield / Admin Fee Mini Badges */
+.wallet-badges-slot {
   display: flex !important;
   align-items: center !important;
   gap: 0.28rem !important;
@@ -7177,11 +7176,12 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   width: 100% !important;
   overflow: hidden !important;
   min-height: 20px !important;
-  margin-top: 0.38rem !important;
+  margin-top: 0.35rem !important;
   margin-bottom: 0.22rem !important;
 }
 
-.wallet-card > div:last-child > div:last-child > div {
+.wallet-badge-item,
+.wallet-badges-slot > div {
   font-size: 0.58rem !important;
   padding: 0.14rem 0.42rem !important;
   border-radius: 5px !important;
@@ -7195,9 +7195,8 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   gap: 0.25rem !important;
 }
 
-/* Nominal balance (ORDER: 2 -> Anchored at the BOTTOM for 100% horizontal alignment) */
+/* Nominal balance (Anchored uniformly with clear typography) */
 .wallet-balance {
-  order: 2 !important;
   font-family: 'Plus Jakarta Sans', sans-serif !important;
   font-size: 1.06rem !important;
   font-weight: 800 !important;
@@ -8426,6 +8425,128 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
 /* ========================================================
    11. Sleek Inline USD Equivalent & Micro Badge Styling
    ======================================================== */
+/* Wallet Card Structured Bottom Alignment */
+.wallet-card-bottom {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  margin-top: auto !important;
+  justify-content: flex-end !important;
+}
+
+/* Slot for Bunga / Admin badges - maintains uniform height (20px) even if empty */
+.wallet-badges-slot {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.28rem !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  min-height: 20px !important;
+  margin-top: 0.35rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.wallet-badge-item {
+  font-size: 0.58rem !important;
+  padding: 0.14rem 0.42rem !important;
+  border-radius: 5px !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.wallet-badge-item.badge-yield {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(34, 197, 94, 0.25) !important;
+}
+
+.wallet-badge-item.badge-fee {
+  background: rgba(148, 163, 184, 0.1) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+/* Balance Group: Pure Rupiah amount on row 1, USD badge on row 2 */
+.wallet-balance-group {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.wallet-balance {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1.06rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.15 !important;
+  font-feature-settings: "tnum" on !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
+  margin: 0 !important;
+  display: block !important;
+}
+
+.wallet-usd-row {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin-top: 3px !important;
+}
+
+.wallet-usd-row .val-usd-sub {
+  margin-left: 0 !important;
+  font-size: 0.68rem !important;
+  padding: 0.08rem 0.38rem !important;
+  border-radius: 5px !important;
+  background: rgba(56, 189, 248, 0.08) !important;
+  border: 1px solid rgba(56, 189, 248, 0.2) !important;
+  color: #38bdf8 !important;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Mode List (Horizontal rows) support */
+.wallets-grid.view-list .wallet-card-bottom {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: auto !important;
+  margin-top: 0 !important;
+  gap: 1rem !important;
+}
+
+.wallets-grid.view-list .wallet-badges-slot {
+  min-height: auto !important;
+  margin: 0 !important;
+}
+
+.wallets-grid.view-list .wallet-balance-group {
+  align-items: flex-end !important;
+  text-align: right !important;
+}
+
+.wallets-grid.view-list .wallet-usd-row {
+  justify-content: flex-end !important;
+}
+
+/* USD Micro Badges general styling */
 .val-usd-sub {
   display: inline-flex !important;
   align-items: center !important;
@@ -8479,14 +8600,6 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   padding: 0.06rem 0.32rem !important;
   margin-left: 0.35rem !important;
   font-weight: 500 !important;
-}
-
-/* Ensure flex alignment for wallet and investment valuations */
-.wallet-balance {
-  display: flex !important;
-  align-items: baseline !important;
-  flex-wrap: wrap !important;
-  gap: 0.25rem !important;
 }
 
 .invest-valuation-large {
