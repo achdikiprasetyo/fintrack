@@ -1,11 +1,11 @@
-const CACHE_NAME = 'fintrack-cache-v89';
+const CACHE_NAME = 'fintrack-cache-v90';
 const STATIC_ASSETS = [
   '/finance/',
   '/finance/index.html',
-  '/finance/css/app.css?v=2.7',
+  '/finance/css/app.css?v=2.8',
   '/finance/css/vendor.css',
   '/finance/js/audio-soundfx.js?v=2.4',
-  '/finance/js/app-core.js?v=2.8',
+  '/finance/js/app-core.js?v=2.9',
   '/finance/js/toast.js',
   '/finance/js/pwa-init.js',
   '/finance/js/forex-usd.js?v=2.3',
@@ -23,7 +23,8 @@ const STATIC_ASSETS = [
   '/finance/icons/favicon.png',
   '/finance/icons/apple-touch-icon.png',
   '/finance/icons/icon-192.png',
-  '/finance/icons/icon-512.png'
+  '/finance/icons/icon-512.png',
+  '/finance/icon-192.png'
 ];
 
 function openSharedDB() {

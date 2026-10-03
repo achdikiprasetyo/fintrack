@@ -97,9 +97,9 @@
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 auto !important;
-        padding: 0.65rem 0.75rem 6.5rem !important;
+        padding: 0 0.75rem 6.5rem !important;
         box-sizing: border-box !important;
-        overflow-x: hidden !important;
+        overflow-x: clip !important;
       }
 
       /* ========================================================
@@ -117,16 +117,19 @@
         align-items: center !important;
         width: calc(100% + 1.5rem) !important;
         max-width: none !important;
-        margin: -0.65rem -0.75rem 1rem -0.75rem !important;
-        padding: calc(env(safe-area-inset-top, 8px) + 8px) 1rem 9px !important;
-        background: rgba(7, 9, 14, 0.82) !important;
+        margin: 0 -0.75rem 1rem -0.75rem !important;
+        padding-top: max(env(safe-area-inset-top, 0px), 8px) !important;
+        padding-bottom: 9px !important;
+        padding-left: max(env(safe-area-inset-left, 0px), 1rem) !important;
+        padding-right: max(env(safe-area-inset-right, 0px), 1rem) !important;
+        background: rgba(7, 9, 14, 0.88) !important;
         backdrop-filter: blur(24px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
         border: none !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
         box-sizing: border-box !important;
-        border-radius: 0 0 18px 18px !important;
+        border-radius: 0 !important;
       }
 
       .brand-wrapper {

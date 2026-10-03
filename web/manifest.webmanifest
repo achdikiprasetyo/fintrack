@@ -7,8 +7,8 @@
   "scope": "/finance/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#080a0f",
-  "theme_color": "#0a0d14",
+  "background_color": "#08090d",
+  "theme_color": "#07090e",
   "categories": ["finance", "productivity"],
   "share_target": {
     "action": "/finance/share-target",
