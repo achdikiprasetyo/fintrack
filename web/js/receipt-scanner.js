@@ -341,6 +341,7 @@
         }
 
         openReceiptModalScanning(initialPreview);
+        if (window.playScanSound) window.playScanSound();
 
         if (currentScanAbortController) {
           try { currentScanAbortController.abort(); } catch (_) {}

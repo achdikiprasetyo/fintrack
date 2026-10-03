@@ -91,7 +91,30 @@
         else if (type === 'warning') iconClass = 'ph-warning-circle';
         else if (type === 'info') iconClass = 'ph-info';
 
-        // 2. Limit stack size to max 4 to avoid screen clutter
+        // 2. Play contextual audio sound effect
+        try {
+          if (type === 'error') {
+            if (window.playErrorSound) window.playErrorSound();
+          } else if (type === 'warning') {
+            if (window.playWarningSound) window.playWarningSound();
+          } else if (type === 'success') {
+            const lowerMsg = (message + ' ' + title).toLowerCase();
+            if (lowerMsg.includes('pemasukan') || lowerMsg.includes('uang masuk') || lowerMsg.includes('terima') || lowerMsg.includes('gaji')) {
+              if (window.playCashSound) window.playCashSound();
+            } else {
+              if (window.playSuccessSound) window.playSuccessSound();
+            }
+          } else if (type === 'info') {
+            const lowerMsg = (message + ' ' + title).toLowerCase();
+            if (lowerMsg.includes('hapus') || lowerMsg.includes('dihapus')) {
+              if (window.playDeleteSound) window.playDeleteSound();
+            } else {
+              if (window.playTapSound) window.playTapSound();
+            }
+          }
+        } catch (_) {}
+
+        // 3. Limit stack size to max 4 to avoid screen clutter
         const activeToasts = container.querySelectorAll('.ft-toast:not(.is-exiting)');
         if (activeToasts.length >= 4) {
           dismissToast(activeToasts[0]);

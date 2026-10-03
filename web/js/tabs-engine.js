@@ -10,10 +10,6 @@
 (function() {
   'use strict';
 
-  // Silent stubs (vibration and click audio removed as requested)
-  window.playTactileTick = function() {};
-  window.playSuccessChime = function() {};
-
   // 1. Number Rolling Engine (IDR Compliant)
   function parseIndonesianIDR(text) {
     if (!text) return null;

@@ -35,6 +35,7 @@ fintrack/
     │   └── xlsx.full.min.js    # Export e-Statement Excel (SheetJS)
     ├── js/                     # Modul fitur JavaScript terpisah (Modular ES6)
     │   ├── app-core.js         # Core application logic & state management
+    │   ├── audio-soundfx.js    # Synthesizer Web Audio API & Custom In-App Dialog Modal
     │   ├── toast.js            # Toast notification engine & haptics
     │   ├── pwa-init.js         # Inisialisasi Service Worker & dialog install PWA
     │   ├── forex-usd.js        # Live Forex interbank USD/IDR rate & ekuivalensi

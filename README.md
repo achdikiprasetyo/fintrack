@@ -33,6 +33,7 @@ fintrack/
 │   │   └── icon-512.png
 │   ├── js/                     # Modul fitur JavaScript terpisah (Modular ES6)
 │   │   ├── app-core.js         # Core application logic & state management
+│   │   ├── audio-soundfx.js    # Synthesizer Web Audio API & In-App Dialog Modal
 │   │   ├── analytics-charts.js # Tab Analisis, KPI cards, ECharts Donut & Bar
 │   │   ├── forex-usd.js        # Live Forex interbank USD/IDR rate
 │   │   ├── period-filter.js    # Filter periode mutasi (Date range calendar)

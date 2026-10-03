@@ -32,6 +32,7 @@
               
               const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
               nativeSetter.call(input, String(newVal));
+              if (window.playTapSound) window.playTapSound();
               input.dispatchEvent(new Event('input', { bubbles: true }));
               updateRealtimeSimulationSafe();
             };
@@ -46,6 +47,7 @@
           clearBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (window.playTapSound) window.playTapSound();
             const input = wrapper.querySelector('input');
             if (!input) return;
             const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
