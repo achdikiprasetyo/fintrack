@@ -60,7 +60,14 @@
       }
 
       // 5. Realtime Balance Simulation & Dynamic Transaction Recording UX
-      function formatRupiah(num) {
+      function formatRupiah(num, ignorePrivacy = false) {
+        if (!ignorePrivacy) {
+          try {
+            if (localStorage.getItem('fintrack_show_balance') === 'false') {
+              return 'Rp ••••••';
+            }
+          } catch(e) {}
+        }
         const isNeg = num < 0;
         const abs = Math.abs(Math.round(num));
         return (isNeg ? '-Rp ' : 'Rp ') + abs.toLocaleString('id-ID');
@@ -519,8 +526,4 @@
           setTimeout(() => { isUpdatingSimulation = false; }, 20);
         }
       }
-
-      // 6. USD Equivalency & Live Exchange Rate Engine
-      let currentUsdRate = 17883.05;
-      let isFetchingUsd = false;
 

@@ -1,17 +1,17 @@
-const CACHE_NAME = 'fintrack-cache-v86';
+const CACHE_NAME = 'fintrack-cache-v87';
 const STATIC_ASSETS = [
   '/finance/',
   '/finance/index.html',
-  '/finance/css/app.css?v=2.4',
+  '/finance/css/app.css?v=2.5',
   '/finance/css/vendor.css',
   '/finance/js/audio-soundfx.js?v=2.4',
-  '/finance/js/app-core.js?v=2.5',
+  '/finance/js/app-core.js?v=2.6',
   '/finance/js/toast.js',
   '/finance/js/pwa-init.js',
-  '/finance/js/forex-usd.js',
-  '/finance/js/analytics-charts.js',
+  '/finance/js/forex-usd.js?v=2.3',
+  '/finance/js/analytics-charts.js?v=2.3',
   '/finance/js/tabs-engine.js',
-  '/finance/js/receipt-simulation.js',
+  '/finance/js/receipt-simulation.js?v=2.3',
   '/finance/js/receipt-scanner.js',
   '/finance/js/ui-enhancers.js',
   '/finance/js/period-filter.js',

@@ -1521,6 +1521,12 @@
           renderAnalyticsDashboard(true);
         }
       });
+
+      window.addEventListener('fintrack_privacy_change', () => {
+        if (currentActiveTab === 'analytics' && typeof renderAnalyticsDashboard === 'function') {
+          renderAnalyticsDashboard(true);
+        }
+      });
       function enforceCleanHeader() {
         document.querySelectorAll('.brand-title').forEach(el => {
           if (el.textContent.includes('24/7')) {

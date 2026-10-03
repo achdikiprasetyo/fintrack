@@ -8422,3 +8422,91 @@ input:focus, select:focus, textarea:focus, .form-control:focus {
   box-shadow: 0 8px 26px rgba(59, 130, 246, 0.55) !important;
   transform: translateY(-1px) !important;
 }
+
+/* ========================================================
+   11. Sleek Inline USD Equivalent & Micro Badge Styling
+   ======================================================== */
+.val-usd-sub {
+  display: inline-flex !important;
+  align-items: center !important;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.08) !important;
+  border: 1px solid rgba(56, 189, 248, 0.22) !important;
+  border-radius: 6px !important;
+  padding: 0.12rem 0.44rem !important;
+  margin-left: 0.45rem !important;
+  vertical-align: middle !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.val-usd-sub:hover {
+  background: rgba(56, 189, 248, 0.16) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  transform: translateY(-0.5px) !important;
+}
+
+.val-usd-sub.gold-theme {
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+.val-usd-sub.gold-theme:hover {
+  background: rgba(245, 158, 11, 0.16) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+.val-usd-sub.emerald-theme {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+.val-usd-sub.emerald-theme:hover {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+}
+
+.val-usd-sub.chip-usd-sub {
+  font-size: 0.64rem !important;
+  padding: 0.06rem 0.32rem !important;
+  margin-left: 0.35rem !important;
+  font-weight: 500 !important;
+}
+
+/* Ensure flex alignment for wallet and investment valuations */
+.wallet-balance {
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 0.25rem !important;
+}
+
+.invest-valuation-large {
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 0.4rem !important;
+}
+
+.alloc-chip-val {
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 0.25rem !important;
+}
+
+/* Global Privacy Mode Body State */
+body.fintrack-privacy-active .privacy-sensitive {
+  filter: blur(5px) !important;
+  user-select: none !important;
+  transition: filter 0.2s ease !important;
+}
+

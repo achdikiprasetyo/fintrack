@@ -1,3 +1,17 @@
+      // Realtime USD Forex Engine & Privacy Observer
+      let currentUsdRate = 17883.05;
+      let isFetchingUsd = false;
+      try {
+        const cached = localStorage.getItem('fintrack_usd_rate_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.rate && parsed.rate > 1000) {
+            currentUsdRate = parsed.rate;
+          }
+        }
+      } catch(e) {}
+      window.fintrackUsdRate = currentUsdRate;
+
       async function fetchUsdRate(force = false) {
         const cached = localStorage.getItem('fintrack_usd_rate_cache');
         if (!force && cached) {
@@ -5,6 +19,7 @@
             const data = JSON.parse(cached);
             if (data.rate !== 17900 && Date.now() - data.timestamp < 60 * 1000 && data.rate > 1000) {
               currentUsdRate = data.rate;
+              window.fintrackUsdRate = currentUsdRate;
               renderUsdEquivalency();
               return;
             }
@@ -25,6 +40,7 @@
           const rate = json?.rate || json?.rates?.IDR;
           if (rate && rate > 5000) {
             currentUsdRate = rate;
+            window.fintrackUsdRate = currentUsdRate;
             localStorage.setItem('fintrack_usd_rate_cache', JSON.stringify({
               rate: currentUsdRate,
               timestamp: Date.now()
@@ -37,6 +53,7 @@
             const json2 = await res2.json();
             if (json2?.rates?.IDR) {
               currentUsdRate = json2.rates.IDR;
+              window.fintrackUsdRate = currentUsdRate;
             }
           } catch(e2) {}
         } finally {
@@ -76,7 +93,7 @@
         }
 
         const amountEl = hero.querySelector('.net-worth-amount');
-        const isPrivacy = !amountEl || (figureEl && figureEl.textContent.includes('•'));
+        const isPrivacy = (localStorage.getItem('fintrack_show_balance') === 'false') || !amountEl || (figureEl && figureEl.textContent.includes('•'));
 
         let usdDisplay = '$ ••••••';
 
@@ -130,6 +147,10 @@
       // Initialize USD rate fetching & refresh every minute
       fetchUsdRate();
       setInterval(fetchUsdRate, 60 * 1000);
+
+      window.addEventListener('fintrack_privacy_change', () => {
+        renderUsdEquivalency();
+      });
 
       // Event listeners for instant reactivity (Bubbling phase, isolated from AI parser textarea)
       document.addEventListener('input', (e) => {
