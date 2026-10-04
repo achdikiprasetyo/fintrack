@@ -1,17 +1,17 @@
-const CACHE_NAME = 'fintrack-cache-v90';
+const CACHE_NAME = 'fintrack-cache-v91';
 const STATIC_ASSETS = [
   '/finance/',
   '/finance/index.html',
-  '/finance/css/app.css?v=2.8',
+  '/finance/css/app.css',
   '/finance/css/vendor.css',
-  '/finance/js/audio-soundfx.js?v=2.4',
-  '/finance/js/app-core.js?v=2.9',
+  '/finance/js/audio-soundfx.js',
+  '/finance/js/app-core.js',
   '/finance/js/toast.js',
   '/finance/js/pwa-init.js',
-  '/finance/js/forex-usd.js?v=2.3',
-  '/finance/js/analytics-charts.js?v=2.3',
+  '/finance/js/forex-usd.js',
+  '/finance/js/analytics-charts.js',
   '/finance/js/tabs-engine.js',
-  '/finance/js/receipt-simulation.js?v=2.3',
+  '/finance/js/receipt-simulation.js',
   '/finance/js/receipt-scanner.js',
   '/finance/js/ui-enhancers.js',
   '/finance/js/period-filter.js',
@@ -126,14 +126,14 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => caches.match(event.request).then((res) => res || (event.request.mode === 'navigate' ? caches.match('/finance/index.html') : null)))
+        .catch(() => caches.match(event.request, { ignoreSearch: true }).then((res) => res || (event.request.mode === 'navigate' ? caches.match('/finance/index.html', { ignoreSearch: true }) : null)))
     );
     return;
   }
 
   // Stale-while-revalidate for images and icons
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
       if (cached) {
         // Fetch in background to update cache
         fetch(event.request).then((res) => {

@@ -1,28 +1,9 @@
       // ========================================================
-      // 11. AI RECEIPT SCANNER & WEB SHARE TARGET ENGINE
-      // ========================================================
-      const receiptModal = document.getElementById('receipt-scan-modal');
-      const receiptFileInput = document.getElementById('receipt-file-input');
-      const receiptScanningState = document.getElementById('receipt-scanning-state');
-      const receiptFormState = document.getElementById('receipt-form-state');
-      const receiptPreviewImg = document.getElementById('receipt-preview-img');
-      const receiptCompactImg = document.getElementById('receipt-compact-img');
-      const receiptDetectedSummary = document.getElementById('receipt-detected-summary');
-      const receiptMetaVal = document.getElementById('receipt-meta-val');
-      const receiptSelectWallet = document.getElementById('receipt-select-wallet');
-      const receiptInputAmount = document.getElementById('receipt-input-amount');
-      const receiptInputMerchant = document.getElementById('receipt-input-merchant');
-      const receiptSelectCategory = document.getElementById('receipt-select-category');
-      const receiptInputDate = document.getElementById('receipt-input-date');
-      const receiptInputNote = document.getElementById('receipt-input-note');
-      const receiptConfirmForm = document.getElementById('receipt-confirm-form');
-      const btnCloseReceiptModal = document.getElementById('btn-close-receipt-modal');
-      const btnCancelReceipt = document.getElementById('btn-cancel-receipt');
-      const btnSubmitReceipt = document.getElementById('btn-submit-receipt');
-
-      // ========================================================
       // MODERN STACKABLE TOAST NOTIFICATION ENGINE (SONNER / RADIX STYLE)
       // - Corner-positioned with real-time countdown progress bar
+      // - Stacks seamlessly, handles fast consecutive additions
+      // - Interactive hover/touch pause, touch swipe & tactile haptic
+      // ========================================================
       // - Stacks seamlessly, handles fast consecutive additions
       // - Interactive hover/touch pause, touch swipe & tactile haptic
       // ========================================================

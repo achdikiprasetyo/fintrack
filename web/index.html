@@ -20,12 +20,18 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/finance/icons/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/finance/icons/icon-192.png" />
 
-    <!-- Phosphor Icons (Non-blocking) -->
+    <!-- Phosphor Icons (Non-blocking with Preconnect) -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="dns-prefetch" href="https://unpkg.com">
     <script defer src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-    <!-- Fonts -->
+
+    <!-- Fonts (High-performance non-blocking swap) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
     
     <!-- Flatpickr Range Calendar -->
     <link rel="stylesheet" href="/finance/vendor/flatpickr.dark.min.css">
@@ -483,14 +489,14 @@
 
     <!-- FinTrack Granular Feature Modules (AI-Friendly & Ultra-Fast) -->
     <script src="/finance/js/audio-soundfx.js?v=2.4"></script>
-    <script src="/finance/js/toast.js?v=2.2"></script>
+    <script src="/finance/js/toast.js?v=2.3"></script>
     <script src="/finance/js/pwa-init.js?v=2.2"></script>
-    <script src="/finance/js/forex-usd.js?v=2.3"></script>
-    <script src="/finance/js/analytics-charts.js?v=2.3"></script>
-    <script src="/finance/js/tabs-engine.js?v=2.2"></script>
+    <script src="/finance/js/forex-usd.js?v=2.4"></script>
+    <script src="/finance/js/analytics-charts.js?v=2.4"></script>
+    <script src="/finance/js/tabs-engine.js?v=2.3"></script>
     <script src="/finance/js/receipt-simulation.js?v=2.3"></script>
-    <script src="/finance/js/receipt-scanner.js?v=2.2"></script>
-    <script src="/finance/js/ui-enhancers.js?v=2.2"></script>
+    <script src="/finance/js/receipt-scanner.js?v=2.3"></script>
+    <script src="/finance/js/ui-enhancers.js?v=2.3"></script>
     <script src="/finance/js/period-filter.js?v=2.2"></script>
     <script src="/finance/js/statement-export.js?v=2.2"></script>
   </body>

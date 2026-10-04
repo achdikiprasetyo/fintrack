@@ -1,31 +1,19 @@
 // ========================================================
 // 3. HERO BADGES ALIGNMENT
 // ========================================================
-// Keep badges properly grouped
-    function alignHeroBadges() {
-      const hero = document.querySelector('.net-worth-hero');
-      if (!hero) return;
-      const wrap = hero.querySelector('.hero-badges-wrapper');
-      const usdLine = hero.querySelector('.net-worth-usd-line');
-      const profitBadge = hero.querySelector('.hero-profit-badge');
-      if (wrap && usdLine && !wrap.contains(usdLine)) {
-        wrap.insertBefore(usdLine, wrap.firstChild);
-      }
-      if (wrap && profitBadge && !wrap.contains(profitBadge)) {
-        wrap.appendChild(profitBadge);
-      }
-    }
-    let heroBadgesDebounce = null;
-    const heroBadgesObserver = new MutationObserver(() => {
-      if (!heroBadgesDebounce) {
-        heroBadgesDebounce = setTimeout(() => {
-          heroBadgesDebounce = null;
-          alignHeroBadges();
-        }, 150);
-      }
-    });
-    heroBadgesObserver.observe(document.body, { childList: true, subtree: true });
-    alignHeroBadges();
+function alignHeroBadges() {
+  const hero = document.querySelector('.net-worth-hero');
+  if (!hero) return;
+  const wrap = hero.querySelector('.hero-badges-wrapper');
+  const usdLine = hero.querySelector('.net-worth-usd-line');
+  const profitBadge = hero.querySelector('.hero-profit-badge');
+  if (wrap && usdLine && !wrap.contains(usdLine)) {
+    wrap.insertBefore(usdLine, wrap.firstChild);
+  }
+  if (wrap && profitBadge && !wrap.contains(profitBadge)) {
+    wrap.appendChild(profitBadge);
+  }
+}
 
 // ========================================================
 // 4. SPEED DIAL INTERACTION
@@ -122,160 +110,137 @@
 // ========================================================
 // 5. WALLET SECTION ENHANCER
 // ========================================================
-// ========================================================
-// WALLET SECTION INTELLIGENT ENHANCER
-// - Adds interactive Bento / List view switcher
-// - Cleans redundant "Utama • " prefixes so text never truncates
-// - Ensures + Tambah button is responsive on mobile
-// ========================================================
-(function() {
-  function enhanceWalletsUI() {
-    const walletsGrid = document.querySelector('.wallets-grid');
-    if (!walletsGrid) return;
+function enhanceWalletsUI() {
+  const walletsGrid = document.querySelector('.wallets-grid');
+  if (!walletsGrid) return;
 
-    // 1. Restore Saved View Mode (Default is Bento Grid)
-    const savedMode = localStorage.getItem('fintrack_wallet_view_mode') || 'bento';
-    if (savedMode === 'list') {
-      walletsGrid.classList.add('view-list');
-    } else {
-      walletsGrid.classList.remove('view-list');
-    }
-
-    // 2. Enhance Section Header with View Toggle
-    const headerWrap = document.querySelector('.section-title-wrap');
-    if (headerWrap && !headerWrap.querySelector('.wallet-view-toggle')) {
-      // Responsive button text on mobile
-      const addBtn = headerWrap.querySelector('.btn-secondary');
-      if (addBtn) {
-        const span = addBtn.querySelector('span');
-        if (span && span.textContent.includes('Tambah Bank')) {
-          span.textContent = '+ Tambah';
-        }
-      }
-
-      // Create View Toggle
-      const toggle = document.createElement('div');
-      toggle.className = 'wallet-view-toggle';
-      toggle.innerHTML = `
-        <button type="button" class="w-view-btn ${savedMode === 'bento' ? 'active' : ''}" data-view="bento" title="Tampilan Bento Grid">
-          <i class="ph ph-squares-four"></i>
-        </button>
-        <button type="button" class="w-view-btn ${savedMode === 'list' ? 'active' : ''}" data-view="list" title="Tampilan List Baris">
-          <i class="ph ph-list-dashes"></i>
-        </button>
-      `;
-
-      toggle.addEventListener('click', (e) => {
-        const btn = e.target.closest('.w-view-btn');
-        if (!btn) return;
-        const view = btn.dataset.view;
-        toggle.querySelectorAll('.w-view-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        if (view === 'list') {
-          walletsGrid.classList.add('view-list');
-          localStorage.setItem('fintrack_wallet_view_mode', 'list');
-        } else {
-          walletsGrid.classList.remove('view-list');
-          localStorage.setItem('fintrack_wallet_view_mode', 'bento');
-        }
-      });
-
-      if (addBtn && addBtn.parentNode) {
-        addBtn.parentNode.insertBefore(toggle, addBtn);
-      } else if (headerWrap) {
-        headerWrap.appendChild(toggle);
-      }
-    }
-
-    // 3. Clean "Utama • " prefixes and prevent ugly truncations
-    const cards = walletsGrid.querySelectorAll('.wallet-card');
-    cards.forEach(card => {
-      const sub = card.querySelector('.wallet-sub');
-      if (sub && !sub.hasAttribute('data-cleaned')) {
-        let txt = sub.textContent || '';
-        txt = txt.replace(/^Utama\s*•\s*/i, '');
-        if (txt.toLowerCase() === 'bank konvensional') txt = 'Konvensional';
-        if (txt.toLowerCase() === 'tunai') txt = 'Kas Tunai';
-        sub.textContent = txt;
-        sub.setAttribute('data-cleaned', 'true');
-      }
-    });
-  }
-
-  // Observe React re-renders with safe debounce
-  let walletDebounce = null;
-  const walletObserver = new MutationObserver(() => {
-    if (!walletDebounce) {
-      walletDebounce = setTimeout(() => {
-        walletDebounce = null;
-        enhanceWalletsUI();
-      }, 150);
-    }
-  });
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      enhanceWalletsUI();
-      walletObserver.observe(document.body, { childList: true, subtree: true });
-    });
+  // 1. Restore Saved View Mode (Default is Bento Grid)
+  const savedMode = localStorage.getItem('fintrack_wallet_view_mode') || 'bento';
+  if (savedMode === 'list') {
+    walletsGrid.classList.add('view-list');
   } else {
-    enhanceWalletsUI();
-    walletObserver.observe(document.body, { childList: true, subtree: true });
+    walletsGrid.classList.remove('view-list');
   }
-})();
 
-// ========================================================
-// 6. BIBIT WEALTH ENHANCER
-// ========================================================
-// ========================================================
-// BIBIT WEALTH MANAGEMENT UI ENHANCER
-// - Makes + Tambah Aset button single-line and compact
-// - Applies structured classes to Bibit product cards
-// ========================================================
-(function() {
-  function enhanceBibitUI() {
-    const bibitCard = document.querySelector('.invest-card.bibit');
-    if (!bibitCard) return;
-
-    // 1. Ensure header button text is single-line & compact on mobile
-    const addBtn = bibitCard.querySelector('.invest-header .btn-secondary');
+  // 2. Enhance Section Header with View Toggle
+  const headerWrap = document.querySelector('.section-title-wrap');
+  if (headerWrap && !headerWrap.querySelector('.wallet-view-toggle')) {
+    // Responsive button text on mobile
+    const addBtn = headerWrap.querySelector('.btn-secondary');
     if (addBtn) {
       const span = addBtn.querySelector('span');
-      if (span && span.textContent.includes('Tambah Aset')) {
-        span.textContent = '+ Aset';
+      if (span && span.textContent.includes('Tambah Bank')) {
+        span.textContent = '+ Tambah';
       }
     }
 
-    // 2. Enhance each product card
-    const items = bibitCard.querySelectorAll('div[style*="flex-direction: column; gap: 0.65rem"] > div, div[style*="flexDirection: column; gap: 0.65rem"] > div');
-    items.forEach(item => {
-      item.classList.add('bibit-product-card');
-      const editBtn = item.querySelector('.btn-icon');
-      if (editBtn) {
-        editBtn.classList.add('bibit-edit-btn');
+    // Create View Toggle
+    const toggle = document.createElement('div');
+    toggle.className = 'wallet-view-toggle';
+    toggle.innerHTML = `
+      <button type="button" class="w-view-btn ${savedMode === 'bento' ? 'active' : ''}" data-view="bento" title="Tampilan Bento Grid">
+        <i class="ph ph-squares-four"></i>
+      </button>
+      <button type="button" class="w-view-btn ${savedMode === 'list' ? 'active' : ''}" data-view="list" title="Tampilan List Baris">
+        <i class="ph ph-list-dashes"></i>
+      </button>
+    `;
+
+    toggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('.w-view-btn');
+      if (!btn) return;
+      const view = btn.dataset.view;
+      toggle.querySelectorAll('.w-view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (view === 'list') {
+        walletsGrid.classList.add('view-list');
+        localStorage.setItem('fintrack_wallet_view_mode', 'list');
+      } else {
+        walletsGrid.classList.remove('view-list');
+        localStorage.setItem('fintrack_wallet_view_mode', 'bento');
       }
     });
+
+    if (addBtn && addBtn.parentNode) {
+      addBtn.parentNode.insertBefore(toggle, addBtn);
+    } else if (headerWrap) {
+      headerWrap.appendChild(toggle);
+    }
   }
 
-  let bibitDebounce = null;
-  const bibitObserver = new MutationObserver(() => {
-    if (!bibitDebounce) {
-      bibitDebounce = setTimeout(() => {
-        bibitDebounce = null;
-        enhanceBibitUI();
-      }, 150);
+  // 3. Clean "Utama • " prefixes and prevent ugly truncations
+  const cards = walletsGrid.querySelectorAll('.wallet-card');
+  cards.forEach(card => {
+    const sub = card.querySelector('.wallet-sub');
+    if (sub && !sub.hasAttribute('data-cleaned')) {
+      let txt = sub.textContent || '';
+      txt = txt.replace(/^Utama\s*•\s*/i, '');
+      if (txt.toLowerCase() === 'bank konvensional') txt = 'Konvensional';
+      if (txt.toLowerCase() === 'tunai') txt = 'Kas Tunai';
+      sub.textContent = txt;
+      sub.setAttribute('data-cleaned', 'true');
+    }
+  });
+}
+
+// ========================================================
+// 6. BIBIT WEALTH MANAGEMENT UI ENHANCER
+// ========================================================
+function enhanceBibitUI() {
+  const bibitCard = document.querySelector('.invest-card.bibit');
+  if (!bibitCard) return;
+
+  // 1. Ensure header button text is single-line & compact on mobile
+  const addBtn = bibitCard.querySelector('.invest-header .btn-secondary');
+  if (addBtn) {
+    const span = addBtn.querySelector('span');
+    if (span && span.textContent.includes('Tambah Aset')) {
+      span.textContent = '+ Aset';
+    }
+  }
+
+  // 2. Enhance each product card
+  const items = bibitCard.querySelectorAll('div[style*="flex-direction: column; gap: 0.65rem"] > div, div[style*="flexDirection: column; gap: 0.65rem"] > div');
+  items.forEach(item => {
+    item.classList.add('bibit-product-card');
+    const editBtn = item.querySelector('.btn-icon');
+    if (editBtn) {
+      editBtn.classList.add('bibit-edit-btn');
+    }
+  });
+}
+
+// ========================================================
+// UNIFIED COORDINATED UI OBSERVER (Zero Thrashing, Targeted on #root)
+// ========================================================
+(function() {
+  function runAllUIEnhancers() {
+    alignHeroBadges();
+    enhanceWalletsUI();
+    enhanceBibitUI();
+  }
+
+  let uiDebounce = null;
+  const uiObserver = new MutationObserver(() => {
+    if (!uiDebounce) {
+      uiDebounce = setTimeout(() => {
+        uiDebounce = null;
+        runAllUIEnhancers();
+      }, 100);
     }
   });
 
+  function startUIObservers() {
+    runAllUIEnhancers();
+    const target = document.getElementById('root') || document.body;
+    uiObserver.observe(target, { childList: true, subtree: true });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      enhanceBibitUI();
-      bibitObserver.observe(document.body, { childList: true, subtree: true });
-    });
+    document.addEventListener('DOMContentLoaded', startUIObservers);
   } else {
-    enhanceBibitUI();
-    bibitObserver.observe(document.body, { childList: true, subtree: true });
+    startUIObservers();
   }
 })();
 

@@ -152,7 +152,27 @@
           pill.style.opacity = '0';
         }
       }
-      window.addEventListener('resize', updateNavPillPosition);
+      let analyticsResizeRaf = null;
+      window.addEventListener('resize', () => {
+        updateNavPillPosition();
+        if (currentActiveTab === 'analytics') {
+          if (analyticsResizeRaf) cancelAnimationFrame(analyticsResizeRaf);
+          analyticsResizeRaf = requestAnimationFrame(() => {
+            if (chartInstances.category && typeof chartInstances.category.resize === 'function') {
+              chartInstances.category.resize();
+            }
+            if (chartInstances.networth && typeof chartInstances.networth.resize === 'function') {
+              chartInstances.networth.resize();
+            }
+            if (chartInstances.timeline && typeof chartInstances.timeline.resize === 'function') {
+              chartInstances.timeline.resize();
+            }
+            if (chartInstances.wallet && typeof chartInstances.wallet.resize === 'function') {
+              chartInstances.wallet.resize();
+            }
+          });
+        }
+      }, { passive: true });
 
       function switchTab(targetTab) {
         if (!targetTab) return;
@@ -1535,5 +1555,5 @@
         });
       }
       enforceCleanHeader();
-      setInterval(enforceCleanHeader, 1000);
+      window.addEventListener('DOMContentLoaded', enforceCleanHeader);
 

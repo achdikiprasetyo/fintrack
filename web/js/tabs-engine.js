@@ -180,11 +180,14 @@
     if (!iconDebounce) {
       iconDebounce = setTimeout(() => {
         iconDebounce = null;
-        modernizeMutasiIcons();
-      }, 200);
+        if (document.querySelector('.tx-filter-btn:not([data-icon-modernized])') || document.querySelector('.tx-title svg')) {
+          modernizeMutasiIcons();
+        }
+      }, 150);
     }
   });
-  iconObserver.observe(document.body, { childList: true, subtree: true });
+  const rootEl = document.getElementById('root') || document.body;
+  iconObserver.observe(rootEl, { childList: true, subtree: true });
   modernizeMutasiIcons();
 
   // 9. Initial Net Worth number roll

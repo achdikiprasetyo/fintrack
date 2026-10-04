@@ -96,9 +96,8 @@ export async function syncMarketData() {
   const investments = { ...appState.investments };
   const wibTime = getWibTimeString();
 
-  // 1. Sync Bibit Assets
-  for (let i = 0; i < bibitAssets.length; i++) {
-    const a = bibitAssets[i];
+  // 1 & 2. Concurrent Parallel Sync (Bibit Assets & Treasury Gold)
+  const bibitPromises = bibitAssets.map(async (a: any, idx: number) => {
     let code = a.productCode;
     let slug = a.slug;
 
@@ -119,7 +118,7 @@ export async function syncMarketData() {
       const res = await fetchBibitNav(code, slug);
       if (res.success && res.nav) {
         console.log(`  -> NAV baru: ${res.nav} (sebelumnya: ${a.currentNav})`);
-        bibitAssets[i] = {
+        bibitAssets[idx] = {
           ...a,
           productCode: code,
           slug: slug,
@@ -128,15 +127,25 @@ export async function syncMarketData() {
           lastUpdated: `Live (${wibTime})`,
           isLive: true
         };
-        updatedBibitCount++;
+        return true;
       } else {
         console.warn(`  -> Gagal update ${a.name}:`, res.error);
       }
     }
-  }
+    return false;
+  });
 
-  // 2. Sync Treasury Gold
-  const goldRes = await fetchTreasuryGold();
+  const [bibitResults, goldRes] = await Promise.all([
+    Promise.allSettled(bibitPromises),
+    fetchTreasuryGold()
+  ]);
+
+  bibitResults.forEach((r) => {
+    if (r.status === "fulfilled" && r.value) {
+      updatedBibitCount++;
+    }
+  });
+
   if (goldRes.success && goldRes.sellPrice && investments.treasury) {
     console.log(`Treasury Gold update -> Buy: ${goldRes.buyPrice}, Sell: ${goldRes.sellPrice}`);
     investments.treasury = {

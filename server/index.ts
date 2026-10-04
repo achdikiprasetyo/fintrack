@@ -291,55 +291,69 @@ function transferWalletKeyboard(step: "from" | "to", wallets: any[], excludeId?:
 }
 
 let cachedUsdRate: { rate: number; timestamp: number } | null = null;
+let inflightUsdPromise: Promise<number> | null = null;
+
 async function getLiveUsdRate(): Promise<number> {
   const now = Date.now();
   if (cachedUsdRate && (now - cachedUsdRate.timestamp < 60000)) {
     return cachedUsdRate.rate;
   }
-  // 1. Primary: Realtime Interbank Forex (matches Google Finance)
-  try {
-    const res = await fetch("https://open.er-api.com/v6/latest/USD", {
-      signal: AbortSignal.timeout(4000)
-    });
-    const json = await res.json();
-    const rate = json?.rates?.IDR;
-    if (rate && rate > 5000) {
-      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
-      return cachedUsdRate.rate;
-    }
-  } catch (e) {
-    console.warn("Failed fetching Open ER USD:", e);
+  if (inflightUsdPromise) {
+    return inflightUsdPromise;
   }
 
-  // 2. Secondary fallback: ExchangeRate-API
-  try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD", {
-      signal: AbortSignal.timeout(4000)
-    });
-    const json = await res.json();
-    const rate = json?.rates?.IDR;
-    if (rate && rate > 5000) {
-      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
-      return cachedUsdRate.rate;
-    }
-  } catch (e) {}
+  inflightUsdPromise = (async () => {
+    try {
+      // 1. Primary: Realtime Interbank Forex (matches Google Finance)
+      try {
+        const res = await fetch("https://open.er-api.com/v6/latest/USD", {
+          signal: AbortSignal.timeout(3500)
+        });
+        const json = await res.json();
+        const rate = json?.rates?.IDR;
+        if (rate && rate > 5000) {
+          cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: Date.now() };
+          return cachedUsdRate.rate;
+        }
+      } catch (e) {
+        console.warn("Failed fetching Open ER USD:", e);
+      }
 
-  // 3. Fallback: Yahoo Finance USDIDR=X
-  try {
-    const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/USDIDR=X", {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      signal: AbortSignal.timeout(4000)
-    });
-    const json = await res.json();
-    const rate = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if (rate && rate > 5000) {
-      cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: now };
-      return cachedUsdRate.rate;
+      // 2. Secondary fallback: ExchangeRate-API
+      try {
+        const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD", {
+          signal: AbortSignal.timeout(3500)
+        });
+        const json = await res.json();
+        const rate = json?.rates?.IDR;
+        if (rate && rate > 5000) {
+          cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: Date.now() };
+          return cachedUsdRate.rate;
+        }
+      } catch (e) {}
+
+      // 3. Fallback: Yahoo Finance USDIDR=X
+      try {
+        const res = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/USDIDR=X", {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+          signal: AbortSignal.timeout(3500)
+        });
+        const json = await res.json();
+        const rate = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (rate && rate > 5000) {
+          cachedUsdRate = { rate: Math.round(rate * 100) / 100, timestamp: Date.now() };
+          return cachedUsdRate.rate;
+        }
+      } catch (e) {
+        console.warn("Failed fetching live Yahoo USD:", e);
+      }
+      return cachedUsdRate ? cachedUsdRate.rate : 17887.64;
+    } finally {
+      inflightUsdPromise = null;
     }
-  } catch (e) {
-    console.warn("Failed fetching live Yahoo USD:", e);
-  }
-  return cachedUsdRate ? cachedUsdRate.rate : 17887.64;
+  })();
+
+  return inflightUsdPromise;
 }
 
 function parseAmountAndNote(rawText: string, usdRate = 17887) {
@@ -930,17 +944,18 @@ async function parseWithHermesOrFallback(text: string, wallets: any[]) {
   const rateRounded = Math.round(liveUsdRate);
   const rateFormatted = rateRounded.toLocaleString("id-ID");
 
-  // 1. Multi-Model Fallback Chain (Gemini Flash Lite Latest -> Gemini 3.1 Flash Lite -> Gemini 2.5 Flash)
+  // 1. Multi-Model Fallback Chain (Gemini 2.5 Flash -> Gemini 2.0 Flash -> Gemini 1.5 Flash -> Gemini Flash Lite)
   const candidateModels = [
-    { id: "gemini-flash-lite-latest", label: "Gemini Flash Lite" },
-    { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
-    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" }
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+    { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+    { id: "gemini-flash-lite-latest", label: "Gemini Flash Lite" }
   ];
 
   for (const model of candidateModels) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const promptSystem = `You are an expert financial transaction extractor for Indonesian users.
 User wallets: ${walletListStr}.
@@ -1404,9 +1419,10 @@ async function scanReceiptWithGemini(params: { imageBase64?: string; mimeType?: 
   const walletListStr = wallets.map((w: any) => `${w.name} (id: "${w.id}")`).join(", ");
 
   const candidateModels = [
-    "gemini-flash-lite-latest",
-    "gemini-3.1-flash-lite",
-    "gemini-2.5-flash"
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-flash-lite-latest"
   ];
 
   const systemPrompt = `You are an expert Indonesian financial transaction and receipt extractor.

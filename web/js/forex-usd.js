@@ -196,9 +196,10 @@
       // Continuous DOM observer for dynamically rendered elements (isolated & debounced)
       let modalObserverDebounce = null;
       const modalObserver = new MutationObserver((mutations) => {
-        // Quick filter: ignore mutations originating from the FX ripple/confetti container
+        // Quick filter: ignore mutations originating from the FX ripple/confetti container or body class changes
         const isIgnorable = mutations.every(m => {
-          if (m.target && m.target.closest && m.target.closest('#ft-fx-container')) return true;
+          if (m.target === document.body) return true;
+          if (m.target && m.target.closest && (m.target.closest('#ft-fx-container') || m.target.closest('#dopamine-confetti-canvas'))) return true;
           return false;
         });
         if (isIgnorable) return;
@@ -223,7 +224,8 @@
           if (!document.getElementById('section-analytics-overview') || !document.querySelector('.mobile-bottom-bar[data-enhanced]')) {
             setupTabNavigationSafe();
           }
-        }, 60);
+        }, 80);
       });
-      modalObserver.observe(document.body, { childList: true, subtree: true });
+      const obsTarget = document.getElementById('root') || document.body;
+      modalObserver.observe(obsTarget, { childList: true, subtree: true });
 
