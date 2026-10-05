@@ -1602,6 +1602,55 @@ async function recordReceiptTransaction(txData: {
   };
 }
 
+// ==========================================
+// PIN AUTHENTICATION & SECURITY GATE
+// ==========================================
+const FINTRACK_PIN = Deno.env.get("FINTRACK_PIN") || "200111";
+const AUTH_SECRET = Deno.env.get("AUTH_SECRET") || "fintrack_sec_gate_48a93bf81d9f82";
+const pinRateLimitMap = new Map<string, { count: number; lockedUntil: number }>();
+
+function getClientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+}
+
+async function signSessionToken(expiresAt: number, pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(AUTH_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const data = `${expiresAt}:${pin}`;
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  const hexSig = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `${expiresAt}.${hexSig}`;
+}
+
+async function verifySessionToken(token: string): Promise<boolean> {
+  try {
+    if (!token) return false;
+    const [expStr, hexSig] = token.split(".");
+    const exp = Number(expStr);
+    if (!exp || Date.now() > exp) return false;
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(AUTH_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const data = `${expStr}:${FINTRACK_PIN}`;
+    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+    const expectedHex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+    return hexSig === expectedHex;
+  } catch {
+    return false;
+  }
+}
+
 // Start HTTP server for health check & optional webhook & live rates & receipt scanner
 Deno.serve({ port: 8081 }, async (req: Request) => {
   const url = new URL(req.url);
@@ -1615,14 +1664,100 @@ Deno.serve({ port: 8081 }, async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // 0. Runtime Configuration for Web Client (Injects .env Supabase credentials dynamically)
+  // 0a. Auth: Verify PIN (Rate-Limited, Zero Plaintext Leak)
+  if (url.pathname === "/api/auth/verify-pin" || url.pathname === "/api/verify-pin") {
+    if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    const ip = getClientIp(req);
+    const now = Date.now();
+    const rateInfo = pinRateLimitMap.get(ip);
+    if (rateInfo && rateInfo.lockedUntil > now) {
+      const waitSec = Math.ceil((rateInfo.lockedUntil - now) / 1000);
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Terlalu banyak percobaan salah! Akses diblokir sementara selama ${waitSec} detik.`,
+        locked: true
+      }), { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    try {
+      const body = await req.json();
+      const enteredPin = String(body.pin || "").trim();
+      const remember = !!body.remember;
+
+      if (enteredPin === FINTRACK_PIN) {
+        pinRateLimitMap.delete(ip);
+        const days = remember ? 360 : 1;
+        const expiresAt = now + days * 24 * 60 * 60 * 1000;
+        const token = await signSessionToken(expiresAt, FINTRACK_PIN);
+
+        return new Response(JSON.stringify({
+          success: true,
+          token,
+          expiresAt,
+          config: {
+            SUPABASE_URL: Deno.env.get("SUPABASE_URL") || "",
+            SUPABASE_ANON_KEY: Deno.env.get("SUPABASE_ANON_KEY") || "",
+            APP_NAME: Deno.env.get("APP_NAME") || "FinTrack"
+          }
+        }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } else {
+        const count = (rateInfo ? rateInfo.count : 0) + 1;
+        let lockedUntil = 0;
+        if (count >= 5) {
+          lockedUntil = now + 15 * 60 * 1000; // 15 mins
+        }
+        pinRateLimitMap.set(ip, { count, lockedUntil });
+        const remaining = Math.max(0, 5 - count);
+        const errMsg = remaining === 0
+          ? "PIN salah 5 kali! Akses diblokir selama 15 menit demi keamanan."
+          : `PIN salah! Sisa percobaan: ${remaining} kali.`;
+        return new Response(JSON.stringify({
+          success: false,
+          error: errMsg,
+          remainingAttempts: remaining
+        }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    } catch (err: any) {
+      return new Response(JSON.stringify({ success: false, error: err.message }), { status: 400, headers: corsHeaders });
+    }
+  }
+
+  // 0b. Auth: Verify Session
+  if (url.pathname === "/api/auth/verify-session" || url.pathname === "/api/verify-session") {
+    if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    try {
+      const body = await req.json();
+      const token = String(body.token || "").trim();
+      const isValid = await verifySessionToken(token);
+      if (isValid) {
+        return new Response(JSON.stringify({
+          valid: true,
+          config: {
+            SUPABASE_URL: Deno.env.get("SUPABASE_URL") || "",
+            SUPABASE_ANON_KEY: Deno.env.get("SUPABASE_ANON_KEY") || "",
+            APP_NAME: Deno.env.get("APP_NAME") || "FinTrack"
+          }
+        }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      return new Response(JSON.stringify({ valid: false, error: "Session expired or invalid" }), { status: 401, headers: corsHeaders });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ valid: false, error: err.message }), { status: 400, headers: corsHeaders });
+    }
+  }
+
+  // 0c. Runtime Configuration for Web Client (Zero Leak: Anon Key only if valid session)
   if (url.pathname === "/api/config.js" || url.pathname === "/config.js" || url.pathname.endsWith("/config.js")) {
-    const cfg = {
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || "";
+    const isAuthed = await verifySessionToken(token);
+    const cfg = isAuthed ? {
       SUPABASE_URL: Deno.env.get("SUPABASE_URL") || "",
       SUPABASE_ANON_KEY: Deno.env.get("SUPABASE_ANON_KEY") || "",
       APP_NAME: Deno.env.get("APP_NAME") || "FinTrack"
+    } : {
+      APP_NAME: Deno.env.get("APP_NAME") || "FinTrack"
     };
-    return new Response(`window.__FINTRACK_CONFIG__ = ${JSON.stringify(cfg)};`, {
+    return new Response(`window.__FINTRACK_CONFIG__ = Object.assign(window.__FINTRACK_CONFIG__ || {}, ${JSON.stringify(cfg)});`, {
       headers: {
         "Content-Type": "application/javascript; charset=utf-8",
         ...corsHeaders,
@@ -1632,11 +1767,17 @@ Deno.serve({ port: 8081 }, async (req: Request) => {
   }
 
   if (url.pathname === "/api/config" || url.pathname === "/config") {
-    return new Response(JSON.stringify({
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || "";
+    const isAuthed = await verifySessionToken(token);
+    const cfg = isAuthed ? {
       supabaseUrl: Deno.env.get("SUPABASE_URL") || "",
       supabaseAnonKey: Deno.env.get("SUPABASE_ANON_KEY") || "",
       appName: Deno.env.get("APP_NAME") || "FinTrack"
-    }), {
+    } : {
+      appName: Deno.env.get("APP_NAME") || "FinTrack"
+    };
+    return new Response(JSON.stringify(cfg), {
       headers: {
         "Content-Type": "application/json",
         ...corsHeaders,
