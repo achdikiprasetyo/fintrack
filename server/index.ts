@@ -1605,8 +1605,12 @@ async function recordReceiptTransaction(txData: {
 // ==========================================
 // PIN AUTHENTICATION & SECURITY GATE
 // ==========================================
-const FINTRACK_PIN = Deno.env.get("FINTRACK_PIN") || "200111";
-const AUTH_SECRET = Deno.env.get("AUTH_SECRET") || "fintrack_sec_gate_48a93bf81d9f82";
+const FINTRACK_PIN = Deno.env.get("FINTRACK_PIN") || "";
+const AUTH_SECRET = Deno.env.get("AUTH_SECRET") || "";
+
+if (!FINTRACK_PIN || !AUTH_SECRET) {
+  console.error("[SECURITY WARNING] FINTRACK_PIN or AUTH_SECRET is not set in environment!");
+}
 const pinRateLimitMap = new Map<string, { count: number; lockedUntil: number }>();
 
 function getClientIp(req: Request): string {
