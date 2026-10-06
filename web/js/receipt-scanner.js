@@ -525,10 +525,35 @@
 
             showToastMessage(`🎉 Pengeluaran Rp ${formatRupiah(cleanAmount)} dari ${result.wallet?.name || 'Dompet'} berhasil dicatat!`);
 
-            // Trigger local update & storage event so UI refreshes real-time
+            // 1. Immediately update localStorage so React and all tabs stay in sync
+            try {
+              const curDataStr = localStorage.getItem('fintrack_hub_data_v10');
+              if (curDataStr) {
+                const curData = JSON.parse(curDataStr);
+                if (curData && Array.isArray(curData.transactions)) {
+                  if (result.transaction && !curData.transactions.some(t => t.id === result.transaction.id)) {
+                    curData.transactions = [result.transaction, ...curData.transactions];
+                  }
+                  if (Array.isArray(curData.wallets) && result.newWalletBalance !== undefined) {
+                    curData.wallets = curData.wallets.map(w => w.id === payload.walletId ? { ...w, balance: result.newWalletBalance } : w);
+                  }
+                  localStorage.setItem('fintrack_hub_data_v10', JSON.stringify(curData));
+                }
+              }
+            } catch (err) {
+              console.warn('[ReceiptScanner] LocalStorage sync error:', err);
+            }
+
+            // 2. Dispatch events to notify React FinanceProvider and external listeners
+            window.dispatchEvent(new CustomEvent('fintrack_reload_state', { detail: result }));
+            window.dispatchEvent(new CustomEvent('fintrack_transaction_recorded', { detail: result }));
             window.dispatchEvent(new Event('storage'));
+
+            // 3. Re-render analytics or cascade animation if open
             if (currentActiveTab === 'analytics') {
-              setTimeout(() => renderAnalyticsDashboard(true), 500);
+              setTimeout(() => renderAnalyticsDashboard(true), 400);
+            } else if (currentActiveTab === 'transactions' && window.animateTransactionCascade) {
+              setTimeout(() => window.animateTransactionCascade(), 400);
             }
 
             // Wire up finish button or auto-close after 3.2s

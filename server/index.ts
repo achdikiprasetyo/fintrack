@@ -1593,6 +1593,14 @@ async function recordReceiptTransaction(txData: {
     ]
   }).catch(() => {});
 
+  const allowedUser = Deno.env.get("ALLOWED_TELEGRAM_USER_ID")?.trim();
+  if (allowedUser) {
+    const icon = isInc ? "💰" : "💸";
+    const remBal = isInc ? Number(targetWallet.balance) + amount : Number(targetWallet.balance) - amount;
+    const teleText = `🧾 <b>TRANSAKSI STRUK TERCATAT (WEB AI)</b>\n<blockquote>\n${icon} <b>${formatIDR(amount)}</b> · ${newTx.note} (${targetWallet.name})\nKategori: <i>${newTx.category}</i>\nSisa Saldo: <code>${formatIDR(remBal)}</code>\nNet Worth: <code>${formatIDR(newNetWorth)}</code>\n</blockquote>`;
+    sendOrEdit(allowedUser, teleText).catch(() => {});
+  }
+
   return {
     success: true,
     transaction: newTx,
