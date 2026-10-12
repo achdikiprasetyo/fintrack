@@ -1921,7 +1921,7 @@ Deno.serve({ port: 8081 }, async (req: Request) => {
           id: `chatcmpl-${Date.now()}`,
           object: "chat.completion",
           created: Math.floor(Date.now() / 1000),
-          model: parseResult.engineName || "gemini-3.5-flash-lite",
+          model: parseResult.engineName || "gemini-flash-lite-latest",
           choices: [
             {
               index: 0,
